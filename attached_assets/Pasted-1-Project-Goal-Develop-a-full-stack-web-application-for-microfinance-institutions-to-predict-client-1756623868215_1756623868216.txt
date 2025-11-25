@@ -1,0 +1,99 @@
+1. Project Goal
+Develop a full-stack web application for microfinance institutions to predict client behavior and assess risk. The app should provide a risk score and an urgency classification. The data will be sourced directly from a provided link to an Excel document on the Microsoft cloud. The dashboard should be filtered by the user's Loan Officer ID. A key feature is a feedback loop where loan officers can input visit results to update a client's urgency score. The app should also include a calendar page to help plan visits.
+
+2. Key Features and Functionality
+The application needs to perform the following tasks:
+
+User Authentication:
+
+When a user logs in, prompt them to input their Loan Officer ID.
+
+Use this ID to filter the data and display only the clients associated with that specific Loan Officer.
+
+Data Integration:
+
+Connect securely to a provided public or shared link of an Excel file on the Microsoft cloud (e.g., OneDrive or SharePoint).
+
+Implement an automatic data synchronization mechanism to check for and process updates to the Excel file every 30 minutes.
+
+AI/Machine Learning Model:
+
+Build a predictive model to generate a risk score and an urgency classification for each client.
+
+User Interface (UI) and Dashboard:
+
+Create a responsive dashboard that displays a filtered list of clients for the logged-in Loan Officer.
+
+Each client entry should clearly show their risk score and urgency classification (e.g., "Extremely Urgent," "Urgent," etc.).
+
+Include a sortable table that allows the user to order the client list by the urgency classification.
+
+Add a client search bar to find specific individuals within the filtered list.
+
+Calendar Page:
+
+Create a separate page with a calendar view.
+
+Allow the user to add new client visits to the calendar. When adding a visit, the user should be able to select the client from a dropdown list (filtered by the Loan Officer ID) and specify the date and time.
+
+Display the scheduled visits on the calendar. Each calendar entry should show the client's name and their current urgency classification.
+
+Data Handling and Security:
+
+Ensure all data access and processing is secure.
+
+Provide clear feedback on the data synchronization status (e.g., "Last updated: [Timestamp]").
+
+3. Specific Data Handling Instructions
+Data Preparation:
+
+Read the Excel data from the provided link into a pandas DataFrame.
+
+Create a new column named is_at_risk with a binary value (0 or 1). The value should be 1 if the Outstanding at risk column is greater than 0 OR the PAR PER LOAN column is greater than 0. Otherwise, the value should be 0. This will be the target variable for the risk model.
+
+Risk Score Calculation:
+
+Use the following columns as features for the predictive model: OUTSTANDING, late days, total delayed instalments, paid instalments, COUNT_RESCHEDULE, and PAYMENT_MONTLY.
+
+Use the is_at_risk column as the target variable.
+
+Train a classification model from the Scikit-learn library (e.g., LogisticRegression or RandomForestClassifier).
+
+The Risk Score for each client will be the predicted probability of the is_at_risk class being 1, multiplied by 100 and rounded to two decimal places.
+
+Urgency Classification and Feedback Loop:
+
+Add two new columns to the DataFrame: last_visit_date (datetime data type) and feedback_score (integer data type from 1-5, default to 3).
+
+Calculate a composite urgency metric for each client using the following formula:
+Composite Urgency = (Risk Score * 0.5) + (Days Since Last Visit * 0.4) + (Feedback Score * 0.1)
+
+Risk Score is the value calculated in the previous step.
+
+Days Since Last Visit is the number of days between the current date and the value in last_visit_date.
+
+Feedback Score is the value from the new feedback_score column.
+
+Rank all clients by this Composite Urgency metric from highest to lowest.
+
+Assign an urgency classification based on the percentile rank:
+
+Top 10% of clients: "Extremely Urgent"
+
+The next 20% (from 10% to 30%): "Urgent"
+
+The next 30% (from 30% to 60%): "Moderately Urgent"
+
+The bottom 40% (from 60% to 100%): "Low Urgency"
+
+User Feedback Mechanism:
+
+The application must include a feature for the loan officer to update the last_visit_date and feedback_score after a visit.
+
+Provide a button or link next to each client's name on the dashboard that, when clicked, opens a simple form. This form should allow the loan officer to:
+
+Enter the date of the visit, which updates last_visit_date.
+
+Select a feedback_score from a dropdown or radio buttons (e.g., 1-5).
+
+Upon submission, the application should automatically recalculate the client's Urgency Classification based on the new data.
