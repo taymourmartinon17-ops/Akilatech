@@ -3692,9 +3692,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new organization with admin user
   app.post("/api/super-admin/organizations", requireSuperAdmin, async (req, res) => {
     try {
+      console.log('[SUPER ADMIN] Create org request body:', JSON.stringify(req.body));
       const { id, name, adminName } = req.body;
       
       if (!id) {
+        console.log('[SUPER ADMIN] Missing id field, body:', req.body);
         return res.status(400).json({ message: "Organization ID is required" });
       }
       

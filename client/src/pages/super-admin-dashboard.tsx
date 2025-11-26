@@ -72,6 +72,7 @@ export default function SuperAdminDashboard() {
   // Create organization mutation
   const createOrgMutation = useMutation({
     mutationFn: async ({ id, name, adminName }: { id: string; name: string; adminName: string }) => {
+      console.log('[DEBUG] Creating organization with:', { id, name, adminName });
       const response = await apiRequest("POST", "/api/super-admin/organizations", { id, name, adminName: adminName || undefined });
       return response.json();
     },
@@ -134,7 +135,11 @@ export default function SuperAdminDashboard() {
 
   const handleCreateOrg = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newOrgId.trim() || !newOrgName.trim()) return;
+    console.log('[DEBUG] Form submit - newOrgId:', newOrgId, 'newOrgName:', newOrgName, 'newAdminName:', newAdminName);
+    if (!newOrgId.trim() || !newOrgName.trim()) {
+      console.log('[DEBUG] Validation failed - org ID or name is empty');
+      return;
+    }
     createOrgMutation.mutate({ id: newOrgId, name: newOrgName, adminName: newAdminName });
   };
 
