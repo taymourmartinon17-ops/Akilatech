@@ -1544,27 +1544,56 @@ export class DatabaseStorage implements IStorage {
       return 0;
     }
     
-    // OPTIMIZED: Use safe batch size (1500) to avoid PostgreSQL parameter limit (65535)
-    // With ~35 columns per row, 1500 rows = ~52,500 parameters (safely under the limit)
-    const BATCH_SIZE = 1500;
     const startTime = Date.now();
-    console.log(`[BULK UPSERT] Processing ${clientsData.length} clients in batches of ${BATCH_SIZE}`);
+    console.log(`[BULK UPSERT] Processing ${clientsData.length} clients...`);
     
+    // OPTIMIZATION: Fetch existing hashes to skip unchanged clients
+    console.log(`[BULK UPSERT] Fetching existing client hashes for change detection...`);
+    const existingHashes = await db
+      .select({ clientId: clients.clientId, dataHash: clients.dataHash })
+      .from(clients)
+      .where(eq(clients.organizationId, organizationId));
+    
+    const hashMap = new Map<string, string | null>();
+    for (const row of existingHashes) {
+      hashMap.set(row.clientId, row.dataHash);
+    }
+    console.log(`[BULK UPSERT] Found ${hashMap.size} existing clients with hashes`);
+    
+    // Compute hashes for incoming data and filter to changed clients only
+    const clientsWithHashes = clientsData.map(client => ({
+      ...client,
+      dataHash: computeClientDataHash(client),
+      loanOfficerId: normalizeOfficerId(client.loanOfficerId)
+    }));
+    
+    const changedClients = clientsWithHashes.filter(client => {
+      const existingHash = hashMap.get(client.clientId);
+      return existingHash !== client.dataHash; // New client or hash changed
+    });
+    
+    const skippedCount = clientsData.length - changedClients.length;
+    console.log(`[BULK UPSERT] ⚡ Skipping ${skippedCount} unchanged clients (${Math.round(skippedCount/clientsData.length*100)}% savings)`);
+    console.log(`[BULK UPSERT] Processing ${changedClients.length} changed/new clients`);
+    
+    if (changedClients.length === 0) {
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[BULK UPSERT] ✓ No changes detected. Completed in ${totalTime}s`);
+      return clientsData.length; // All clients are up-to-date
+    }
+    
+    // OPTIMIZED: Use safe batch size (1500) to avoid PostgreSQL parameter limit (65535)
+    const BATCH_SIZE = 1500;
     let totalProcessed = 0;
-    const totalBatches = Math.ceil(clientsData.length / BATCH_SIZE);
+    const totalBatches = Math.ceil(changedClients.length / BATCH_SIZE);
     
-    for (let i = 0; i < clientsData.length; i += BATCH_SIZE) {
-      const batch = clientsData.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < changedClients.length; i += BATCH_SIZE) {
+      const batch = changedClients.slice(i, i + BATCH_SIZE);
       
       try {
         // Use PostgreSQL's ON CONFLICT clause for efficient upserts
-        // Target the composite unique constraint (organizationId, clientId)
-        // Let database generate ID and timestamps on insert, only update fields on conflict
-        const insertResult = await db.insert(clients)
-          .values(batch.map(client => ({
-            ...client,
-            loanOfficerId: normalizeOfficerId(client.loanOfficerId)
-          }) as any))
+        await db.insert(clients)
+          .values(batch as any)
           .onConflictDoUpdate({
             target: [clients.organizationId, clients.clientId],
             set: {
@@ -1585,16 +1614,16 @@ export class DatabaseStorage implements IStorage {
               urgencyClassification: sql.raw('excluded.urgency_classification'),
               urgencyBreakdown: sql.raw('excluded.urgency_breakdown'),
               actionSuggestions: sql.raw('excluded.action_suggestions'),
+              dataHash: sql.raw('excluded.data_hash'),
               updatedAt: sql.raw('now()')
             }
-          })
-          .returning({ clientId: clients.clientId });
+          });
         
         totalProcessed += batch.length;
         const batchNum = Math.floor(i/BATCH_SIZE) + 1;
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        const rate = Math.round(totalProcessed / (Date.now() - startTime) * 1000);
-        console.log(`[BULK UPSERT] Batch ${batchNum}/${totalBatches}: ${totalProcessed}/${clientsData.length} (${elapsed}s, ${rate} records/s)`);
+        const rate = totalProcessed > 0 ? Math.round(totalProcessed / (Date.now() - startTime) * 1000) : 0;
+        console.log(`[BULK UPSERT] Batch ${batchNum}/${totalBatches}: ${totalProcessed}/${changedClients.length} (${elapsed}s, ${rate} records/s)`);
         
       } catch (error) {
         console.error(`[BULK UPSERT] Error in batch ${Math.floor(i/BATCH_SIZE) + 1}:`, error);
@@ -1617,9 +1646,9 @@ export class DatabaseStorage implements IStorage {
     }
     
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    const avgRate = Math.round(totalProcessed / (Date.now() - startTime) * 1000);
-    console.log(`[BULK UPSERT] ✓ Completed ${totalProcessed}/${clientsData.length} clients in ${totalTime}s (${avgRate} records/s)`);
-    return totalProcessed;
+    const avgRate = totalProcessed > 0 ? Math.round(totalProcessed / (Date.now() - startTime) * 1000) : 0;
+    console.log(`[BULK UPSERT] ✓ Completed ${totalProcessed}/${changedClients.length} changed clients in ${totalTime}s (${avgRate} records/s, ${skippedCount} skipped)`);
+    return clientsData.length; // Return total processed including skipped
   }
 
   async getUniqueLoanOfficers(organizationId: string): Promise<{ loanOfficerId: string; clientCount: number }[]> {
