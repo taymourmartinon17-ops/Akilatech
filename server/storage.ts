@@ -253,6 +253,8 @@ export class MemStorage implements IStorage {
       id, 
       isAdmin: insertUser.isAdmin || false,
       isSuperAdmin: insertUser.isSuperAdmin || false,
+      requiresPasswordSetup: insertUser.requiresPasswordSetup ?? false,
+      setupToken: insertUser.setupToken ?? null,
       totalPoints: 0,
       currentStreak: 0,
       longestStreak: 0,
@@ -270,6 +272,7 @@ export class MemStorage implements IStorage {
     const user = this.users.get(userId);
     if (user) {
       user.password = await hashPassword(password);
+      user.requiresPasswordSetup = false; // Clear the flag after password is set
       this.users.set(userId, user);
     }
   }
@@ -1360,7 +1363,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserPassword(userId: string, password: string): Promise<void> {
     const hashedPassword = await hashPassword(password);
-    await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+    await db.update(users).set({ 
+      password: hashedPassword,
+      requiresPasswordSetup: false // Clear the flag after password is set
+    }).where(eq(users.id, userId));
   }
 
   // Client methods

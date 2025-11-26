@@ -22,6 +22,10 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").notNull().default(false), // Kept for backward compatibility
   isSuperAdmin: boolean("is_super_admin").notNull().default(false), // Platform super admin
   
+  // First-time password setup fields
+  requiresPasswordSetup: boolean("requires_password_setup").notNull().default(false), // User must set password on first login
+  setupToken: text("setup_token"), // Secure token for password setup flow
+  
   // Gamification fields
   totalPoints: integer("total_points").notNull().default(0),
   currentStreak: integer("current_streak").notNull().default(0),

@@ -477,7 +477,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user needs to set up password for the first time
-      if (!user.password) {
+      // Only trigger setup flow if no password is submitted (empty string or missing)
+      const hasPassword = password && password.trim().length > 0;
+      
+      if ((!user.password || user.requiresPasswordSetup) && !hasPassword) {
         // Generate a secure one-time setup token
         const setupToken = crypto.randomBytes(32).toString('hex');
         const expires = Date.now() + (10 * 60 * 1000); // 10 minutes
@@ -495,11 +498,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      if (!password) {
-        return res.status(400).json({ message: "Password is required" });
+      // Password is required for users who have already set their password
+      if (!hasPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      if (!user.password || !(await verifyPassword(password, user.password))) {
+      // For users needing setup but providing password, reject (they need to go through setup flow)
+      if (!user.password || user.requiresPasswordSetup) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      if (!(await verifyPassword(password, user.password))) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -547,10 +556,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Loan Officer ID is required" });
       }
       
-      if (!password) {
-        return res.status(400).json({ message: "Password is required" });
-      }
-      
       if (!organizationId) {
         return res.status(400).json({ message: "Organization ID is required" });
       }
@@ -561,7 +566,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      if (!user.password || !(await verifyPassword(password, user.password))) {
+      // Check if user needs to set up password for the first time
+      // Only trigger setup flow if no password is submitted (empty string or missing)
+      const hasPassword = password && password.trim().length > 0;
+      
+      if ((!user.password || user.requiresPasswordSetup) && !hasPassword) {
+        // Generate a secure one-time setup token
+        const setupToken = crypto.randomBytes(32).toString('hex');
+        const expires = Date.now() + (10 * 60 * 1000); // 10 minutes
+        
+        passwordSetupTokens.set(setupToken, {
+          userId: user.id,
+          loanOfficerId: user.loanOfficerId,
+          expires
+        });
+        
+        return res.status(423).json({ 
+          message: "Password setup required", 
+          needsPasswordSetup: true,
+          setupToken
+        });
+      }
+      
+      // Password is required for users who have already set their password
+      if (!hasPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // For users needing setup but providing password, reject (they need to go through setup flow)
+      if (!user.password || user.requiresPasswordSetup) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      if (!(await verifyPassword(password, user.password))) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
