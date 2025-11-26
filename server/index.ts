@@ -157,20 +157,16 @@ app.use((req, res, next) => {
     if (!existingAdmin) {
       console.log('[STARTUP] No admin user found - creating default admin for organization "mfw"...');
       
-      // Create default admin for organization "mfw"
+      // Create default admin for organization "mfw" with password setup required
       try {
-        // Use environment variable for admin password or generate secure random one
-        const crypto = await import('crypto');
-        const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64');
-        const isGeneratedPassword = !process.env.ADMIN_PASSWORD;
-        
         await storage.createUser({
           organizationId: 'mfw',
           loanOfficerId: 'ADMIN',
-          password: adminPassword,
+          password: null, // No password - admin will set it on first login
           name: 'MFW Administrator',
           role: 'admin',
           isAdmin: true,
+          requiresPasswordSetup: true, // Flag for first-time password setup
           totalPoints: 0,
           currentStreak: 0,
           currentRank: null,
@@ -180,13 +176,7 @@ app.use((req, res, next) => {
         console.log('✅ [STARTUP] Admin user created successfully!');
         console.log('   Organization ID: mfw');
         console.log('   Loan Officer ID: ADMIN');
-        if (isGeneratedPassword) {
-          console.log('   ⚠️  GENERATED Password:', adminPassword);
-          console.log('   ⚠️  IMPORTANT: Save this password securely and change it after first login!');
-          console.log('   💡  TIP: Set ADMIN_PASSWORD environment variable to use a custom password');
-        } else {
-          console.log('   ✅  Using password from ADMIN_PASSWORD environment variable');
-        }
+        console.log('   🔐 Password: Admin will set their own password on first login');
       } catch (userError: any) {
         console.error('[STARTUP ERROR] Failed to create admin user:', userError?.message || userError);
         console.error('[STARTUP ERROR] This is a critical error - admin login will not work!');
@@ -222,18 +212,15 @@ app.use((req, res, next) => {
       console.log('[STARTUP] No super admin found - creating platform super administrator...');
       
       try {
-        const crypto = await import('crypto');
-        const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64');
-        const isGeneratedPassword = !process.env.SUPER_ADMIN_PASSWORD;
-        
         await storage.createUser({
           organizationId: 'AKILA', // Super admin belongs to AKILA organization
           loanOfficerId: 'SUPER_ADMIN',
-          password: superAdminPassword,
+          password: null, // No password - super admin will set it on first login
           name: 'Platform Administrator',
           role: 'super_admin',
           isAdmin: true, // Also has admin privileges
           isSuperAdmin: true,
+          requiresPasswordSetup: true, // Flag for first-time password setup
           totalPoints: 0,
           currentStreak: 0,
           currentRank: null,
@@ -244,13 +231,7 @@ app.use((req, res, next) => {
         console.log('   Organization ID: AKILA');
         console.log('   Loan Officer ID: SUPER_ADMIN');
         console.log('   Access: Both Organization Dashboard & Super Admin Panel');
-        if (isGeneratedPassword) {
-          console.log('   ⚠️  GENERATED Password:', superAdminPassword);
-          console.log('   ⚠️  IMPORTANT: Save this password securely!');
-          console.log('   💡  TIP: Set SUPER_ADMIN_PASSWORD environment variable to use a custom password');
-        } else {
-          console.log('   ✅  Using password from SUPER_ADMIN_PASSWORD environment variable');
-        }
+        console.log('   🔐 Password: Super admin will set their own password on first login');
       } catch (superAdminError: any) {
         console.error('[STARTUP ERROR] Failed to create super admin:', superAdminError?.message || superAdminError);
       }

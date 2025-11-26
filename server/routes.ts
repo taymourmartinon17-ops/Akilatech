@@ -3689,10 +3689,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new organization
+  // Create new organization with admin user
   app.post("/api/super-admin/organizations", requireSuperAdmin, async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name, adminName } = req.body;
       
       if (!name) {
         return res.status(400).json({ message: "Organization name is required" });
@@ -3707,7 +3707,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).returning();
       
       console.log(`[SUPER ADMIN] Created new organization: ${newOrg.id} - ${newOrg.name}`);
-      res.json(newOrg);
+      
+      // Create admin user for the new organization with password setup required
+      const adminLoanOfficerId = 'ADMIN';
+      const adminUserName = adminName || `${name} Administrator`;
+      
+      try {
+        const adminUser = await storage.createUser({
+          organizationId: newOrg.id,
+          loanOfficerId: adminLoanOfficerId,
+          password: null, // No password - admin will set it on first login
+          name: adminUserName,
+          role: 'admin',
+          isAdmin: true,
+          requiresPasswordSetup: true, // Flag for first-time password setup
+          totalPoints: 0,
+          currentStreak: 0,
+          currentRank: null,
+          branchId: null
+        });
+        
+        // Update organization with admin user ID
+        const { eq } = await import('drizzle-orm');
+        await db.update(organizations)
+          .set({ adminUserId: adminUser.id })
+          .where(eq(organizations.id, newOrg.id));
+        
+        console.log(`[SUPER ADMIN] Created admin user for organization ${newOrg.id}: ${adminLoanOfficerId}`);
+        
+        res.json({
+          ...newOrg,
+          adminUser: {
+            loanOfficerId: adminLoanOfficerId,
+            name: adminUserName,
+            requiresPasswordSetup: true
+          }
+        });
+      } catch (adminError) {
+        console.error(`[SUPER ADMIN] Failed to create admin user for ${newOrg.id}:`, adminError);
+        // Still return the organization, but with error info
+        res.json({
+          ...newOrg,
+          adminUserError: "Failed to create admin user. You can create one manually later."
+        });
+      }
     } catch (error) {
       console.error("Error creating organization:", error);
       res.status(500).json({ message: "Failed to create organization" });

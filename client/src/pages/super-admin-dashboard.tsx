@@ -21,6 +21,14 @@ export default function SuperAdminDashboard() {
   const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
+  const [newAdminName, setNewAdminName] = useState("");
+  const [createdOrgResult, setCreatedOrgResult] = useState<{
+    orgId: string;
+    orgName: string;
+    adminLoanOfficerId: string;
+    adminName: string;
+  } | null>(null);
+  const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -62,18 +70,31 @@ export default function SuperAdminDashboard() {
 
   // Create organization mutation
   const createOrgMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const response = await apiRequest("POST", "/api/super-admin/organizations", { name });
+    mutationFn: async ({ name, adminName }: { name: string; adminName: string }) => {
+      const response = await apiRequest("POST", "/api/super-admin/organizations", { name, adminName: adminName || undefined });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/organizations"] });
-      toast({
-        title: "Success",
-        description: "Organization created successfully",
-      });
       setIsCreateDialogOpen(false);
       setNewOrgName("");
+      setNewAdminName("");
+      
+      // Show credentials dialog if admin was created
+      if (data.adminUser) {
+        setCreatedOrgResult({
+          orgId: data.id,
+          orgName: data.name,
+          adminLoanOfficerId: data.adminUser.loanOfficerId,
+          adminName: data.adminUser.name
+        });
+        setIsCredentialsDialogOpen(true);
+      } else {
+        toast({
+          title: "Success",
+          description: data.adminUserError || "Organization created successfully",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -112,7 +133,7 @@ export default function SuperAdminDashboard() {
   const handleCreateOrg = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrgName.trim()) return;
-    createOrgMutation.mutate(newOrgName);
+    createOrgMutation.mutate({ name: newOrgName, adminName: newAdminName });
   };
 
   const handleDeleteOrg = (orgId: string, orgName: string) => {
@@ -256,6 +277,19 @@ export default function SuperAdminDashboard() {
                         required
                         data-testid="input-org-name"
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="adminName">Administrator Name (optional)</Label>
+                      <Input
+                        id="adminName"
+                        value={newAdminName}
+                        onChange={(e) => setNewAdminName(e.target.value)}
+                        placeholder="Enter administrator name"
+                        data-testid="input-admin-name"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        An admin account will be created automatically. They will set their own password on first login.
+                      </p>
                     </div>
                     <Button
                       type="submit"
@@ -506,6 +540,57 @@ export default function SuperAdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin Credentials Dialog */}
+      <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-green-600 flex items-center gap-2">
+              <i className="fas fa-check-circle"></i>
+              Organization Created Successfully
+            </DialogTitle>
+          </DialogHeader>
+          {createdOrgResult && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                A new organization has been created with an administrator account. Share these login credentials with the organization admin.
+              </p>
+              
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Organization ID</Label>
+                  <p className="font-mono text-lg font-bold">{createdOrgResult.orgId}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Loan Officer ID</Label>
+                  <p className="font-mono text-lg font-bold">{createdOrgResult.adminLoanOfficerId}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Administrator Name</Label>
+                  <p className="font-medium">{createdOrgResult.adminName}</p>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  🔐 First Login Instructions
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  The admin should log in with their Organization ID and Loan Officer ID (no password). They will be prompted to create their own secure password.
+                </p>
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={() => setIsCredentialsDialogOpen(false)}
+                data-testid="button-close-credentials"
+              >
+                Done
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
