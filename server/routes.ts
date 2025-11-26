@@ -3692,16 +3692,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new organization with admin user
   app.post("/api/super-admin/organizations", requireSuperAdmin, async (req, res) => {
     try {
-      const { name, adminName } = req.body;
+      const { id, name, adminName } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ message: "Organization ID is required" });
+      }
       
       if (!name) {
         return res.status(400).json({ message: "Organization name is required" });
       }
       
+      // Validate organization ID format (alphanumeric, underscores, hyphens, 2-50 chars)
+      const idRegex = /^[a-zA-Z0-9_-]{2,50}$/;
+      if (!idRegex.test(id)) {
+        return res.status(400).json({ 
+          message: "Organization ID must be 2-50 characters and contain only letters, numbers, underscores, or hyphens" 
+        });
+      }
+      
       const { db } = await import('./db.js');
       const { organizations } = await import('../shared/schema.js');
+      const { eq } = await import('drizzle-orm');
+      
+      // Check if organization ID already exists
+      const [existingOrg] = await db.select().from(organizations).where(eq(organizations.id, id));
+      if (existingOrg) {
+        return res.status(409).json({ message: "An organization with this ID already exists" });
+      }
       
       const [newOrg] = await db.insert(organizations).values({
+        id,
         name,
         adminUserId: null
       }).returning();

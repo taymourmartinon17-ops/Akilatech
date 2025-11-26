@@ -20,6 +20,7 @@ export default function SuperAdminDashboard() {
   const { logout } = useAuth();
   const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newOrgId, setNewOrgId] = useState("");
   const [newOrgName, setNewOrgName] = useState("");
   const [newAdminName, setNewAdminName] = useState("");
   const [createdOrgResult, setCreatedOrgResult] = useState<{
@@ -70,13 +71,14 @@ export default function SuperAdminDashboard() {
 
   // Create organization mutation
   const createOrgMutation = useMutation({
-    mutationFn: async ({ name, adminName }: { name: string; adminName: string }) => {
-      const response = await apiRequest("POST", "/api/super-admin/organizations", { name, adminName: adminName || undefined });
+    mutationFn: async ({ id, name, adminName }: { id: string; name: string; adminName: string }) => {
+      const response = await apiRequest("POST", "/api/super-admin/organizations", { id, name, adminName: adminName || undefined });
       return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/organizations"] });
       setIsCreateDialogOpen(false);
+      setNewOrgId("");
       setNewOrgName("");
       setNewAdminName("");
       
@@ -132,8 +134,8 @@ export default function SuperAdminDashboard() {
 
   const handleCreateOrg = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newOrgName.trim()) return;
-    createOrgMutation.mutate({ name: newOrgName, adminName: newAdminName });
+    if (!newOrgId.trim() || !newOrgName.trim()) return;
+    createOrgMutation.mutate({ id: newOrgId, name: newOrgName, adminName: newAdminName });
   };
 
   const handleDeleteOrg = (orgId: string, orgName: string) => {
@@ -267,6 +269,20 @@ export default function SuperAdminDashboard() {
                     <DialogTitle>Create New Organization</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleCreateOrg} className="space-y-4">
+                    <div>
+                      <Label htmlFor="orgId">Organization ID</Label>
+                      <Input
+                        id="orgId"
+                        value={newOrgId}
+                        onChange={(e) => setNewOrgId(e.target.value.toUpperCase())}
+                        placeholder="e.g., ACME, MFW, BANK_01"
+                        required
+                        data-testid="input-org-id"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Unique identifier for the organization. Users will use this to log in.
+                      </p>
+                    </div>
                     <div>
                       <Label htmlFor="orgName">Organization Name</Label>
                       <Input
