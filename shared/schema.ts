@@ -83,6 +83,8 @@ export const clients = pgTable("clients", {
   // Snooze functionality
   snoozedUntil: timestamp("snoozed_until"),
   snoozedBy: text("snoozed_by"),
+  // Data change detection - hash of financial data for fast sync
+  dataHash: text("data_hash"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 }, (table) => ({
