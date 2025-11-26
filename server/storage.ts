@@ -1,5 +1,29 @@
 import { type User, type InsertUser, type Client, type InsertClient, type Visit, type InsertVisit, type PhoneCall, type InsertPhoneCall, type DataSync, type UpdateClientFeedback, type Settings, type InsertSettings, type UpdateSettings, type GamificationRule, type InsertGamificationRule, type GamificationSeason, type InsertGamificationSeason, type GamificationEvent, type InsertGamificationEvent, type GamificationBadge, type InsertGamificationBadge, type GamificationUserBadge, type InsertGamificationUserBadge, type PortfolioSnapshot, type InsertPortfolioSnapshot, type StreakHistory, type InsertStreakHistory } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
+
+// Compute a hash of the financial data for change detection during sync
+// Only includes fields that come from Excel data (not feedback/visit data set by users)
+export function computeClientDataHash(client: InsertClient): string {
+  const dataToHash = {
+    clientId: client.clientId,
+    name: client.name,
+    loanOfficerId: normalizeOfficerId(client.loanOfficerId),
+    managerId: client.managerId ?? '',
+    outstanding: client.outstanding ?? 0,
+    outstandingAtRisk: client.outstandingAtRisk ?? 0,
+    parPerLoan: client.parPerLoan ?? 0,
+    lateDays: client.lateDays ?? 0,
+    totalDelayedInstalments: client.totalDelayedInstalments ?? 0,
+    paidInstalments: client.paidInstalments ?? 0,
+    countReschedule: client.countReschedule ?? 0,
+    paymentMonthly: client.paymentMonthly ?? 0,
+    isAtRisk: client.isAtRisk ?? false,
+    riskScore: Math.round((client.riskScore ?? 0) * 100) / 100,
+    compositeUrgency: Math.round((client.compositeUrgency ?? 0) * 100) / 100,
+    urgencyClassification: client.urgencyClassification ?? 'Low Urgency',
+  };
+  return createHash('md5').update(JSON.stringify(dataToHash)).digest('hex');
+}
 import { db } from "./db";
 import { users, clients, visits, phoneCalls, dataSync, settings, gamificationRules, gamificationSeasons, gamificationEvents, gamificationBadges, gamificationUserBadges, portfolioSnapshots, organizations, streakHistory } from "@shared/schema";
 import { eq, desc, sql, and, count } from "drizzle-orm";
@@ -394,6 +418,7 @@ export class MemStorage implements IStorage {
       visitNotes: null,
       snoozedUntil: null,
       snoozedBy: null,
+      dataHash: null,
       ...insertClient,
       organizationId: insertClient.organizationId ?? null,
       managerId: insertClient.managerId ?? null,
