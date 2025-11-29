@@ -137,9 +137,9 @@ export const dataSync = pgTable("data_sync", {
   currentStep: text("current_step"),
   provisionedUsers: jsonb("provisioned_users").$type<Array<{
     loanOfficerId: string;
-    defaultPassword: string;
     name: string;
-  }>>(), // Auto-provisioned loan officer accounts during upload
+    requiresPasswordSetup: boolean;
+  }>>(), // Auto-provisioned loan officer accounts during upload (will set password on first login)
   provisioningErrors: jsonb("provisioning_errors").$type<string[]>(), // Errors during user provisioning
 });
 

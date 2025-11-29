@@ -95,15 +95,15 @@ function broadcastWeightUpdate(organizationId: string, settings: any) {
 
 // Function to auto-provision missing loan officer user accounts
 async function provisionMissingUsers(organizationId: string): Promise<{
-  createdUsers: Array<{ loanOfficerId: string; defaultPassword: string; name: string }>;
+  createdUsers: Array<{ loanOfficerId: string; name: string; requiresPasswordSetup: boolean }>;
   errors: string[];
 }> {
-  const createdUsers = [];
-  const errors = [];
+  const createdUsers: Array<{ loanOfficerId: string; name: string; requiresPasswordSetup: boolean }> = [];
+  const errors: string[] = [];
   
   try {
     const officerStats = await storage.getUniqueLoanOfficers(organizationId);
-    const missingUsers = [];
+    const missingUsers: string[] = [];
     
     // Find officers without user accounts
     for (const officer of officerStats) {
@@ -116,28 +116,28 @@ async function provisionMissingUsers(organizationId: string): Promise<{
     
     console.log(`[PROVISION] Found ${missingUsers.length} loan officers without user accounts in organization ${organizationId}`);
     
-    // Create user accounts for missing officers
+    // Create user accounts for missing officers with first-time password setup
     for (const officerId of missingUsers) {
       try {
-        // Generate a secure random password
-        const defaultPassword = crypto.randomBytes(8).toString('hex'); // 16 character hex password
         const officerName = `Loan Officer ${officerId}`;
         
+        // Create user with NO password - they'll set their own on first login
         const newUser = await storage.createUser({
           loanOfficerId: officerId,
-          password: defaultPassword,
+          password: null, // No password - triggers first-time setup flow
           name: officerName,
           isAdmin: false,
-          organizationId
+          organizationId,
+          requiresPasswordSetup: true // User must set password on first login
         });
         
         createdUsers.push({
           loanOfficerId: newUser.loanOfficerId,
-          defaultPassword: defaultPassword,
-          name: newUser.name
+          name: newUser.name,
+          requiresPasswordSetup: true
         });
         
-        console.log(`[PROVISION] Created user account for ${officerId}`);
+        console.log(`[PROVISION] Created user account for ${officerId} (requires password setup)`);
         
       } catch (error) {
         console.error(`[PROVISION] Failed to create user for ${officerId}:`, error);
