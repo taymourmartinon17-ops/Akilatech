@@ -20,12 +20,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
   const login = async (organizationId: string, loanOfficerId: string, password: string, skipRedirect = false): Promise<{ success: boolean; needsPasswordSetup?: boolean; setupToken?: string; error?: string }> => {
@@ -158,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Validate server session on page load
     const validateSession = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
@@ -183,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem('user');
           }
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -200,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isAdmin: !!user?.isAdmin,
       isSuperAdmin: !!user?.isSuperAdmin,
+      isLoading,
     }}>
       {children}
     </AuthContext.Provider>

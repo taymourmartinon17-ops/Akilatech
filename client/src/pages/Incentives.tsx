@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Award, TrendingUp, Star, Lock, CheckCircle, Medal, Flame, Target, Zap, Calendar } from "lucide-react";
+import { Trophy, Award, TrendingUp, Star, Lock, CheckCircle, Medal, Flame, Target, Zap, Calendar, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { GamificationBadge, GamificationUserBadge } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 interface UserStats {
   totalPoints: number;
@@ -29,7 +31,15 @@ interface LeaderboardEntry {
 
 export default function Incentives() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      setLocation('/');
+    }
+  }, [isAuthenticated, isLoading, setLocation]);
 
   usePageTracking({ pageName: "Incentives", pageRoute: "/incentives" });
 
@@ -128,6 +138,21 @@ export default function Incentives() {
 
   // Real backend data for streak history (last 7 days)
   const streakDays = streakHistory.map(record => record.targetMet);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          <p className="text-slate-600 dark:text-slate-400">{t('common.loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" data-testid="page-incentives">

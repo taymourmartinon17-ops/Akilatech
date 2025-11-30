@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTranslation } from 'react-i18next';
+import { Loader2 } from "lucide-react";
 
 type AuthStep = 'check-id' | 'login' | 'signup' | 'set-password';
 
@@ -27,23 +28,24 @@ export default function Login() {
   const [password, setPasswordValue] = useState("");
   const [name, setName] = useState("");
   const [setupToken, setSetupToken] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, signup, setPassword: setUserPassword, isAuthenticated, user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, signup, setPassword: setUserPassword, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (isAuthenticated && user) {
       // Redirect super admins to super admin panel, others to dashboard
       setLocation(user.isSuperAdmin ? '/super-admin' : '/dashboard');
     }
-  }, [isAuthenticated, user, setLocation]);
+  }, [isAuthenticated, user, isAuthLoading, setLocation]);
 
   const handleCheckLoanOfficerId = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organizationId.trim() || !loanOfficerId.trim()) return;
     
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     try {
       const response = await fetch(`/api/auth/check/${encodeURIComponent(loanOfficerId.trim())}?organizationId=${encodeURIComponent(organizationId.trim())}`);
@@ -77,12 +79,12 @@ export default function Login() {
       });
     }
     
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const result = await login(organizationId, loanOfficerId, password);
     
@@ -99,7 +101,7 @@ export default function Login() {
       }
     }
     
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
 
   const handleSetPassword = async (e: React.FormEvent) => {
@@ -114,7 +116,7 @@ export default function Login() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const success = await setUserPassword(setupToken, password);
     
@@ -126,12 +128,12 @@ export default function Login() {
       });
     }
     
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const success = await signup(organizationId, loanOfficerId, password, name);
     
@@ -149,7 +151,7 @@ export default function Login() {
       });
     }
     
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
 
   const handleBack = () => {
@@ -158,6 +160,17 @@ export default function Login() {
     setName("");
     // Keep organizationId and loanOfficerId so user doesn't have to re-enter
   };
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/5 to-accent/10">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">{t('common.loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/10" data-testid="login-screen">
@@ -214,11 +227,11 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full font-medium"
-                disabled={isLoading || !organizationId.trim() || !loanOfficerId.trim()}
+                disabled={isSubmitting || !organizationId.trim() || !loanOfficerId.trim()}
                 data-testid="button-continue"
               >
                 <i className="fas fa-arrow-right me-2"></i>
-                {isLoading ? t('auth.checking') : t('common.continue')}
+                {isSubmitting ? t('auth.checking') : t('common.continue')}
               </Button>
             </form>
           )}
@@ -249,11 +262,11 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full font-medium"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   data-testid="button-sign-in"
                 >
                   <i className="fas fa-sign-in-alt me-2"></i>
-                  {isLoading ? t('auth.signingIn') : t('auth.signIn')}
+                  {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
                 </Button>
                 <Button
                   type="button"
@@ -295,11 +308,11 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full font-medium"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   data-testid="button-set-password"
                 >
                   <i className="fas fa-key me-2"></i>
-                  {isLoading ? t('auth.settingPassword') : t('auth.setPassword')}
+                  {isSubmitting ? t('auth.settingPassword') : t('auth.setPassword')}
                 </Button>
                 <Button
                   type="button"
@@ -356,11 +369,11 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full font-medium"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   data-testid="button-create-account"
                 >
                   <i className="fas fa-user-plus me-2"></i>
-                  {isLoading ? t('auth.creatingAccount') : t('auth.createAccount')}
+                  {isSubmitting ? t('auth.creatingAccount') : t('auth.createAccount')}
                 </Button>
                 <Button
                   type="button"

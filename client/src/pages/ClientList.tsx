@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useClientCalculation } from "@/hooks/use-client-calculation";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import type { Client } from "@shared/schema";
 import { triggerConfettiBurst } from "@/lib/confetti";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ClientList() {
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { loanOfficerId: routeOfficerId } = useParams();
   const { toast } = useToast();
@@ -22,10 +22,11 @@ export default function ClientList() {
   usePageTracking({ pageName: "Clients", pageRoute: "/clients" });
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) {
       setLocation('/');
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, isLoading, setLocation]);
 
   // Listen for visit completion events from WebSocket
   useEffect(() => {
@@ -90,6 +91,17 @@ export default function ClientList() {
     }
     return client;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-slate-600 dark:text-slate-400">{t('common.loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return null;

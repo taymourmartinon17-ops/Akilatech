@@ -442,15 +442,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isSuperAdmin: user.isSuperAdmin
       };
       
-      res.status(201).json({ 
-        user: { 
-          id: user.id, 
-          organizationId: user.organizationId,
-          loanOfficerId: user.loanOfficerId, 
-          name: user.name,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin
-        } 
+      // Explicitly save session to ensure it persists to PostgreSQL store
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Signup failed - session error" });
+        }
+        res.status(201).json({ 
+          user: { 
+            id: user.id, 
+            organizationId: user.organizationId,
+            loanOfficerId: user.loanOfficerId, 
+            name: user.name,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin
+          } 
+        });
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -531,15 +538,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error updating login streak:", streakError);
       }
       
-      res.json({ 
-        user: { 
-          id: user.id, 
-          organizationId: user.organizationId,
-          loanOfficerId: user.loanOfficerId, 
-          name: user.name,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin
-        } 
+      // Explicitly save session to ensure it persists to PostgreSQL store
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Login failed - session error" });
+        }
+        res.json({ 
+          user: { 
+            id: user.id, 
+            organizationId: user.organizationId,
+            loanOfficerId: user.loanOfficerId, 
+            name: user.name,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin
+          } 
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -621,15 +635,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error updating login streak:", streakError);
       }
       
-      res.json({ 
-        user: { 
-          id: user.id, 
-          organizationId: user.organizationId,
-          loanOfficerId: user.loanOfficerId, 
-          name: user.name,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: true
-        } 
+      // Explicitly save session to ensure it persists to PostgreSQL store
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Login failed - session error" });
+        }
+        res.json({ 
+          user: { 
+            id: user.id, 
+            organizationId: user.organizationId,
+            loanOfficerId: user.loanOfficerId, 
+            name: user.name,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: true
+          } 
+        });
       });
     } catch (error) {
       console.error("Super admin login error:", error);
@@ -685,15 +706,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isSuperAdmin: user.isSuperAdmin
       };
       
-      res.json({ 
-        user: { 
-          id: user.id, 
-          organizationId: user.organizationId,
-          loanOfficerId: user.loanOfficerId, 
-          name: user.name,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin
-        } 
+      // Explicitly save session to ensure it persists to PostgreSQL store
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to set password - session error" });
+        }
+        res.json({ 
+          user: { 
+            id: user.id, 
+            organizationId: user.organizationId,
+            loanOfficerId: user.loanOfficerId, 
+            name: user.name,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin
+          } 
+        });
       });
     } catch (error) {
       console.error("Set password error:", error);

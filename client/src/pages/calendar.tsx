@@ -14,14 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/lib/auth";
 import { usePageTracking } from "@/hooks/use-page-tracking";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Trash2, CheckCircle, Clock, Phone, Home } from "lucide-react";
+import { Trash2, CheckCircle, Clock, Phone, Home, Loader2 } from "lucide-react";
 import type { Visit, PhoneCall, Client } from "@shared/schema";
 import { triggerConfettiBurst } from "@/lib/confetti";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Calendar() {
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   
   usePageTracking({ pageName: "Calendar", pageRoute: "/calendar" });
@@ -47,10 +47,11 @@ export default function Calendar() {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) {
       setLocation('/');
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, isLoading, setLocation]);
 
   // Listen for visit completion events from WebSocket
   useEffect(() => {
@@ -419,6 +420,17 @@ export default function Calendar() {
   const previousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+          <p className="text-slate-600 dark:text-slate-400">{t('common.loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return null;

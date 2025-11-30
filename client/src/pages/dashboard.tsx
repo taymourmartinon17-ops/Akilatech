@@ -15,13 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
 import { PerformanceWidget } from "@/components/performance-widget";
 import { PerformanceGraphs } from "@/components/performance-graphs";
-import { RefreshCw, Clock, Calendar } from "lucide-react";
+import { RefreshCw, Clock, Calendar, Loader2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -65,10 +65,11 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) {
       setLocation('/');
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, isLoading, setLocation]);
 
   // Listen for visit completion events from WebSocket
   useEffect(() => {
@@ -202,6 +203,17 @@ export default function Dashboard() {
   const handleSnoozeClient = (client: Client, duration: number) => {
     snoozeMutation.mutate({ clientId: client.id, duration });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-slate-600 dark:text-slate-400">{t('common.loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return null;
