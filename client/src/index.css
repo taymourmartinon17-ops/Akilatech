@@ -35,8 +35,8 @@
   --sidebar-accent-foreground: hsl(204, 88%, 53%);
   --sidebar-border: hsl(205, 25%, 91%);
   --sidebar-ring: hsl(203, 89%, 53%);
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-serif: Georgia, serif;
+  --font-sans: 'Inter', 'Noto Sans Arabic', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: Georgia, 'Noto Serif Arabic', serif;
   --font-mono: Menlo, monospace;
   --radius: 8px;
   --shadow-2xs: 0 1px 2px 0 hsl(0, 0%, 0% / 0.05);
@@ -361,4 +361,77 @@
 
 .visit-dot-low {
   background-color: hsl(142, 76%, 36%);
+}
+
+/* RTL (Right-to-Left) Support for Arabic */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Flip directional icons in RTL mode */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Icons that should flip in RTL (arrows, chevrons) */
+[dir="rtl"] .lucide-chevron-right,
+[dir="rtl"] .lucide-chevron-left,
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-arrow-up-right,
+[dir="rtl"] .lucide-arrow-down-left {
+  transform: scaleX(-1);
+}
+
+/* Ensure proper table alignment in RTL */
+[dir="rtl"] table {
+  text-align: right;
+}
+
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: inherit;
+}
+
+/* Fix flex direction for RTL in specific layouts */
+[dir="rtl"] .flex-row-reverse-rtl {
+  flex-direction: row-reverse;
+}
+
+/* Modal and dialog positioning for RTL */
+[dir="rtl"] [data-side="right"] {
+  --radix-popover-content-transform-origin: left center;
+}
+
+[dir="rtl"] [data-side="left"] {
+  --radix-popover-content-transform-origin: right center;
+}
+
+/* Smooth transitions for language switching */
+html {
+  transition: direction 0.2s ease-in-out;
+}
+
+/* Arabic text optimizations */
+[dir="rtl"] {
+  font-feature-settings: "ss01" on, "ss02" on;
+  letter-spacing: 0;
+}
+
+/* Ensure form inputs align properly in RTL */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: inherit;
+}
+
+/* Progress bar direction for RTL */
+[dir="rtl"] .progress-bar-rtl {
+  direction: rtl;
+}
+
+/* Sidebar position adjustment for RTL */
+[dir="rtl"] .sidebar-rtl {
+  left: auto;
+  right: 0;
 }

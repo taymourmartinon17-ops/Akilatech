@@ -68,16 +68,16 @@ export function BadgeUnlockCelebration({
             <Card className="relative bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 border-4 border-yellow-400 shadow-2xl max-w-md">
               <CardContent className="p-8 text-center space-y-6">
                 {/* Floating sparkles */}
-                <div className="absolute top-4 left-4 animate-bounce">
+                <div className="absolute top-4 start-4 animate-bounce">
                   <Sparkles className="h-6 w-6 text-yellow-400" />
                 </div>
-                <div className="absolute top-4 right-4 animate-bounce delay-150">
+                <div className="absolute top-4 end-4 animate-bounce delay-150">
                   <Star className="h-6 w-6 text-orange-400" />
                 </div>
-                <div className="absolute bottom-4 left-8 animate-bounce delay-300">
+                <div className="absolute bottom-4 start-8 animate-bounce delay-300">
                   <Star className="h-5 w-5 text-yellow-400" />
                 </div>
-                <div className="absolute bottom-4 right-8 animate-bounce delay-200">
+                <div className="absolute bottom-4 end-8 animate-bounce delay-200">
                   <Sparkles className="h-5 w-5 text-orange-400" />
                 </div>
 

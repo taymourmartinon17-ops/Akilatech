@@ -157,7 +157,7 @@ export function ActionsPreview({ loanOfficerId }: { loanOfficerId: string }) {
                       className={`shrink-0 ${suggestion.action === 'call' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                       data-testid={`preview-action-button-${client.clientId}`}
                     >
-                      <ActionIcon className="h-4 w-4 mr-1" />
+                      <ActionIcon className="h-4 w-4 me-1" />
                       {suggestion.action === 'call' ? t('actions.call') : t('actions.visit')}
                     </Button>
                   </Link>
@@ -412,7 +412,7 @@ export function IncentivesPreview() {
               <p className="text-xs text-amber-100">{t('incentives.pointsRankAchievements')}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             {rankInfo.icon && <span className="text-2xl">{rankInfo.icon}</span>}
           </div>
         </div>
@@ -471,7 +471,7 @@ export function IncentivesPreview() {
                       title={badge.name}
                       data-testid={`preview-badge-${badge.id}`}
                     >
-                      <CheckCircle className="absolute top-0 right-0 h-3 w-3 text-primary -mt-1 -mr-1" />
+                      <CheckCircle className="absolute top-0 end-0 h-3 w-3 text-primary -mt-1 -me-1" />
                       <div className="text-2xl mb-1">{badge.icon}</div>
                       <p className="text-[10px] font-medium truncate">{badge.name}</p>
                     </div>
@@ -483,7 +483,7 @@ export function IncentivesPreview() {
                     title={badge.name}
                     data-testid={`preview-badge-locked-${badge.id}`}
                   >
-                    <Lock className="absolute top-0 right-0 h-3 w-3 text-muted-foreground -mt-1 -mr-1" />
+                    <Lock className="absolute top-0 end-0 h-3 w-3 text-muted-foreground -mt-1 -me-1" />
                     <div className="text-2xl mb-1 grayscale">{badge.icon}</div>
                     <p className="text-[10px] font-medium truncate">{badge.name}</p>
                   </div>

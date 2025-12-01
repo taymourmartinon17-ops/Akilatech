@@ -374,7 +374,7 @@ export default function Incentives() {
                         <div className="text-sm text-muted-foreground">{t('incentives.currentTier')}</div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-4xl font-bold text-amber-600 dark:text-amber-400">
                         {stats?.totalPoints || 0}
                       </div>
@@ -519,14 +519,14 @@ export default function Incentives() {
                             transition={{ type: "spring", stiffness: 200 }}
                           >
                             <CheckCircle 
-                              className="absolute -top-2 -right-2 h-6 w-6 text-green-500 bg-white dark:bg-gray-900 rounded-full" 
+                              className="absolute -top-2 -end-2 h-6 w-6 text-green-500 bg-white dark:bg-gray-900 rounded-full" 
                               data-testid={`badge-earned-${badge.id}`}
                             />
                           </motion.div>
                         )}
                         {!isEarned && (
                           <Lock 
-                            className="absolute top-2 right-2 h-4 w-4 text-gray-400" 
+                            className="absolute top-2 end-2 h-4 w-4 text-gray-400" 
                             data-testid={`badge-locked-${badge.id}`}
                           />
                         )}

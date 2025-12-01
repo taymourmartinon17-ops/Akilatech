@@ -284,7 +284,7 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-red-500" />
             {t('settings.riskScoreComponentWeights')}
-            <span className={`ml-auto text-sm ${Math.abs(riskTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`ms-auto text-sm ${Math.abs(riskTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
               {t('settings.total')}: {riskTotal.toFixed(1)}%
             </span>
           </CardTitle>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={weights[key as keyof WeightSettings]}
                     onChange={handleInputChange(key as keyof WeightSettings)}
-                    className="w-20 text-right"
+                    className="w-20 text-end"
                     data-testid={`input-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`}
                   />
                   <span className="text-sm text-muted-foreground">%</span>
@@ -340,7 +340,7 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-orange-500" />
             {t('settings.urgencyScoreComponentWeights')}
-            <span className={`ml-auto text-sm ${Math.abs(urgencyTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`ms-auto text-sm ${Math.abs(urgencyTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
               {t('settings.total')}: {urgencyTotal.toFixed(1)}%
             </span>
           </CardTitle>
@@ -368,7 +368,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={weights[key as keyof WeightSettings]}
                     onChange={handleInputChange(key as keyof WeightSettings)}
-                    className="w-20 text-right"
+                    className="w-20 text-end"
                     data-testid={`input-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`}
                   />
                   <span className="text-sm text-muted-foreground">%</span>
@@ -393,7 +393,7 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-purple-500" />
             {t('settings.feedbackScoreComponentWeights')}
-            <span className={`ml-auto text-sm ${Math.abs(feedbackTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`ms-auto text-sm ${Math.abs(feedbackTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
               {t('settings.total')}: {feedbackTotal.toFixed(1)}%
             </span>
           </CardTitle>
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={weights[key as keyof WeightSettings]}
                     onChange={handleInputChange(key as keyof WeightSettings)}
-                    className="w-20 text-right"
+                    className="w-20 text-end"
                     data-testid={`input-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`}
                   />
                   <span className="text-sm text-muted-foreground">%</span>
@@ -478,12 +478,12 @@ export default function SettingsPage() {
                 >
                   {createSnapshotMutation.isPending ? (
                     <>
-                      <Settings className="h-4 w-4 mr-2 animate-spin" />
+                      <Settings className="h-4 w-4 me-2 animate-spin" />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <Camera className="h-4 w-4 mr-2" />
+                      <Camera className="h-4 w-4 me-2" />
                       Create Snapshot
                     </>
                   )}
@@ -507,7 +507,7 @@ export default function SettingsPage() {
                 }
               </p>
             </div>
-            <div className="text-right space-y-1">
+            <div className="text-end space-y-1">
               <div className={`text-sm ${Math.abs(riskTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
                 {t('settings.risk')}: {riskTotal.toFixed(1)}%
               </div>

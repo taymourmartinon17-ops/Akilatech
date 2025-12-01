@@ -304,7 +304,7 @@ function OfficerDetailView({ officerId, onBack }: {
                       Urgency: {client.urgencyClassification}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <Badge 
                       variant={
                         client.urgencyClassification === 'Extremely Urgent' ? 'destructive' :
@@ -439,7 +439,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
+              <Search className="absolute start-3 top-3 h-4 w-4 text-purple-300" />
               <Input
                 placeholder="Search officers..."
                 value={searchTerm}

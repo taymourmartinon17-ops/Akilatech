@@ -175,7 +175,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/10" data-testid="login-screen">
       <Card className="w-full max-w-md shadow-xl border border-border relative">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 end-4">
           <LanguageSwitcher />
         </div>
         <CardHeader>

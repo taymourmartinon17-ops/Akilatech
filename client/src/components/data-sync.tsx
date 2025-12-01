@@ -209,7 +209,7 @@ export function DataSync({ onSyncComplete }: DataSyncProps) {
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-connect-data">
-                <i className="fas fa-link mr-2"></i>
+                <i className="fas fa-link me-2"></i>
                 Connect Data Source
               </Button>
             </DialogTrigger>
@@ -302,7 +302,7 @@ export function DataSync({ onSyncComplete }: DataSyncProps) {
                     onClick={() => setIsOpen(false)}
                     data-testid="button-cancel"
                   >
-                    <i className="fas fa-times mr-2"></i>
+                    <i className="fas fa-times me-2"></i>
                     Cancel
                   </Button>
                   <Button
@@ -311,7 +311,7 @@ export function DataSync({ onSyncComplete }: DataSyncProps) {
                     disabled={syncMutation.isPending || uploadMutation.isPending}
                     data-testid="button-sync"
                   >
-                    <i className="fas fa-sync mr-2"></i>
+                    <i className="fas fa-sync me-2"></i>
                     {syncMutation.isPending || uploadMutation.isPending 
                       ? (syncMethod === 'upload' ? "Uploading..." : "Connecting...") 
                       : (syncMethod === 'upload' ? "Upload & Process" : "Connect & Sync")

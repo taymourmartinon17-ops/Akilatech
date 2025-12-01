@@ -184,7 +184,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
                 <p className="text-sm text-green-100">{t('performanceGraphs.portfolioValueDesc')}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-2xl font-bold">{formatCurrency(totalWallet)}</div>
               <div className={`text-sm flex items-center gap-1 justify-end ${walletGrowth >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
                 {walletGrowth >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
@@ -232,7 +232,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
                 <p className="text-sm text-blue-100">{t('performanceGraphs.clientPortfolioDesc')}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-2xl font-bold">{clients.length}</div>
               <div className={`text-sm flex items-center gap-1 justify-end ${clientGrowth >= 0 ? 'text-blue-200' : 'text-indigo-200'}`}>
                 {clientGrowth >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
@@ -280,7 +280,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
                 <p className="text-sm text-purple-100">{t('performanceGraphs.riskManagementDesc')}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-2xl font-bold">{avgRisk.toFixed(1)}</div>
               <div className={`text-sm flex items-center gap-1 justify-end ${riskReduction >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
                 {riskReduction >= 0 ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
@@ -336,7 +336,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
                 <p className="text-sm text-amber-100">{t('performanceGraphs.visitActivityDesc')}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-2xl font-bold">{completedVisits}</div>
               <div className="text-sm text-amber-200">{t('performanceGraphs.completedVisits')}</div>
             </div>

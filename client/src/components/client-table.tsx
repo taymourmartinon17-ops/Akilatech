@@ -310,7 +310,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
             <div className="flex flex-col space-y-4 animate-in fade-in duration-200">
             {/* Search Bar */}
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="text"
                 placeholder={t('dashboard.searchPlaceholder')}
@@ -505,7 +505,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
             <thead className="bg-indigo-50 border-b-2 border-indigo-200">
               <tr>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('name')}
                   data-testid="header-client-name"
                 >
@@ -515,7 +515,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('riskScore')}
                   data-testid="header-risk-score"
                 >
@@ -525,7 +525,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('compositeUrgency')}
                   data-testid="header-urgency"
                 >
@@ -535,7 +535,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('lastVisitDate')}
                   data-testid="header-last-visit"
                 >
@@ -545,7 +545,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('outstanding')}
                   data-testid="header-outstanding"
                 >
@@ -555,7 +555,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                  className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider cursor-pointer hover:bg-indigo-100/50 transition-colors"
                   onClick={() => handleSort('feedbackScore')}
                   data-testid="header-feedback"
                 >
@@ -564,7 +564,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                     {t('dashboard.feedback')}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-start text-xs font-bold text-indigo-900 uppercase tracking-wider">
                   {t('dashboard.actions')}
                 </th>
               </tr>
@@ -590,7 +590,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
                         </div>
                         <div>
                           <button
-                            className="text-sm font-medium text-foreground hover:text-primary hover:underline cursor-pointer text-left"
+                            className="text-sm font-medium text-foreground hover:text-primary hover:underline cursor-pointer text-start"
                             onClick={() => handleShowClientDetail(client)}
                             data-testid={`text-client-name-${client.clientId}`}
                           >

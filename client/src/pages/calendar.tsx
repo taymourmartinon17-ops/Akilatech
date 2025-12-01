@@ -540,7 +540,7 @@ export default function Calendar() {
                 >
                   {day.date.getDate()}
                   {(day.visits.length > 0 || day.phoneCalls.length > 0) && (
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
+                    <div className="absolute bottom-1 start-1/2 transform -translate-x-1/2 flex gap-1">
                       {/* Visit indicators (solid circles) */}
                       {day.visits.slice(0, 2).map((visit, visitIndex) => {
                         const client = getClientDetails(visit.clientId);

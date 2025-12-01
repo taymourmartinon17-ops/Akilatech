@@ -466,7 +466,7 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       {visit.status === 'completed' && visit.notes && (
                         <div className="text-sm text-muted-foreground italic mb-1">
                           "{visit.notes}"

@@ -114,7 +114,7 @@ export function PerformanceWidget() {
               <span className="font-semibold">Level {level}</span>
             </div>
             <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
-              <Medal className="h-3 w-3 mr-1" />
+              <Medal className="h-3 w-3 me-1" />
               {stats?.totalPoints || 0} pts
             </Badge>
           </div>
@@ -127,7 +127,7 @@ export function PerformanceWidget() {
               gradientTo="to-blue-500"
               className="h-3"
             />
-            <p className="text-xs text-muted-foreground text-right">
+            <p className="text-xs text-muted-foreground text-end">
               {progressToNextLevel}/100 to Level {level + 1}
             </p>
           </div>

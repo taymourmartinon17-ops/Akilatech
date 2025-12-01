@@ -449,7 +449,7 @@ function AdminGamificationContent() {
             <TabsTrigger value="approvals" data-testid="tab-approvals">
               {t('gamification.approvals')}
               {pendingEvents.length > 0 && (
-                <Badge variant="destructive" className="ml-2" data-testid="badge-pending-count">
+                <Badge variant="destructive" className="ms-2" data-testid="badge-pending-count">
                   {pendingEvents.length}
                 </Badge>
               )}
@@ -477,7 +477,7 @@ function AdminGamificationContent() {
                   }}>
                     <DialogTrigger asChild>
                       <Button data-testid="button-add-rule">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-4 w-4 me-2" />
                         {t('gamification.addNewRule')}
                       </Button>
                     </DialogTrigger>
@@ -694,7 +694,7 @@ function AdminGamificationContent() {
                   }}>
                     <DialogTrigger asChild>
                       <Button data-testid="button-add-season">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-4 w-4 me-2" />
                         Create New Season
                       </Button>
                     </DialogTrigger>
@@ -737,11 +737,11 @@ function AdminGamificationContent() {
                                     <FormControl>
                                       <Button
                                         variant="outline"
-                                        className="pl-3 text-left font-normal"
+                                        className="ps-3 text-start font-normal"
                                         data-testid="button-start-date"
                                       >
                                         {field.value ? format(field.value, "PPP") : "Pick a date"}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        <CalendarIcon className="ms-auto h-4 w-4 opacity-50" />
                                       </Button>
                                     </FormControl>
                                   </PopoverTrigger>
@@ -770,11 +770,11 @@ function AdminGamificationContent() {
                                     <FormControl>
                                       <Button
                                         variant="outline"
-                                        className="pl-3 text-left font-normal"
+                                        className="ps-3 text-start font-normal"
                                         data-testid="button-end-date"
                                       >
                                         {field.value ? format(field.value, "PPP") : "Pick a date"}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        <CalendarIcon className="ms-auto h-4 w-4 opacity-50" />
                                       </Button>
                                     </FormControl>
                                   </PopoverTrigger>
@@ -941,7 +941,7 @@ function AdminGamificationContent() {
                         disabled={seedBadgesMutation.isPending}
                         data-testid="button-seed-badges"
                       >
-                        <Award className="h-4 w-4 mr-2" />
+                        <Award className="h-4 w-4 me-2" />
                         {seedBadgesMutation.isPending ? 'Creating...' : 'Seed Default Badges'}
                       </Button>
                     )}
@@ -954,7 +954,7 @@ function AdminGamificationContent() {
                     }}>
                       <DialogTrigger asChild>
                         <Button data-testid="button-add-badge">
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="h-4 w-4 me-2" />
                           Create New Badge
                         </Button>
                       </DialogTrigger>
@@ -1260,7 +1260,7 @@ function AdminGamificationContent() {
                     onClick={handleExportLeaderboard}
                     data-testid="button-export-csv"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Export CSV
                   </Button>
                 </div>

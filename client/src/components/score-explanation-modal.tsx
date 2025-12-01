@@ -296,13 +296,13 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
 
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <h5 className="font-semibold mb-2 flex items-center">
-                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    <AlertTriangle className="w-4 h-4 me-2" />
                     {t('scoreExplanation.howRiskScoreCalculated')}
                   </h5>
                   <p className="text-sm text-muted-foreground mb-2">
                     {t('scoreExplanation.riskScoreExplanation')}
                   </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <ul className="text-sm text-muted-foreground space-y-1 ms-4">
                     <li>• {t('scoreExplanation.riskFactorLateDays')}</li>
                     <li>• {t('scoreExplanation.riskFactorOutstandingPAR')}</li>
                     <li>• {t('scoreExplanation.riskFactorRescheduling')}</li>
@@ -379,13 +379,13 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
 
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <h5 className="font-semibold mb-2 flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
+                    <Clock className="w-4 h-4 me-2" />
                     {t('scoreExplanation.howUrgencyScoreCalculated')}
                   </h5>
                   <p className="text-sm text-muted-foreground mb-2">
                     {t('scoreExplanation.urgencyScoreExplanation')}
                   </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <ul className="text-sm text-muted-foreground space-y-1 ms-4">
                     <li>• {t('scoreExplanation.urgencyFactorRiskScore')}</li>
                     <li>• {t('scoreExplanation.urgencyFactorDays')}</li>
                     <li>• {t('scoreExplanation.urgencyFactorFeedback')}</li>
