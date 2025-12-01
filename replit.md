@@ -203,3 +203,26 @@ See DEPLOYMENT.md for comprehensive deployment documentation.
   - First sync after update will compute hashes, subsequent syncs are much faster
 - ✅ Hash includes: clientId, name, loanOfficerId, managerId, outstanding, outstandingAtRisk, parPerLoan, lateDays, totalDelayedInstalments, paidInstalments, countReschedule, paymentMonthly, isAtRisk, riskScore, compositeUrgency, urgencyClassification
 - ✅ Hash excludes user-generated data: lastVisitDate, lastPhoneCallDate, feedback scores, snooze fields (these don't trigger re-sync)
+
+### RTL (Right-to-Left) Arabic Language Support (December 1, 2025)
+- ✅ **i18n Infrastructure**: Complete Arabic/English translation system using i18next
+  - LanguageSwitcher component with Globe icon dropdown menu
+  - Integrated in navigation bar and login page
+  - Automatic direction switching between LTR and RTL
+- ✅ **CSS Logical Properties**: Converted 50+ directional CSS classes to logical properties using Tailwind 3.4.17:
+  - `ml-*` → `ms-*` (margin-start)
+  - `mr-*` → `me-*` (margin-end)
+  - `pl-*` → `ps-*` (padding-start)
+  - `pr-*` → `pe-*` (padding-end)
+  - `left-*` → `start-*` (inset-inline-start)
+  - `right-*` → `end-*` (inset-inline-end)
+  - `text-left` → `text-start`
+  - `text-right` → `text-end`
+- ✅ **RTL CSS Utilities in index.css**:
+  - Icon flipping for directional icons (chevrons, arrows)
+  - Table alignment rules for RTL
+  - Form input alignment
+  - Sidebar positioning
+  - Modal and dialog positioning
+- ✅ **Arabic Font Support**: Added Noto Sans Arabic, Cairo, Tajawal with system fallbacks
+- ✅ **Components Updated**: client-table, navigation, login, calendar, admin-dashboard, score-explanation-modal, data-sync, performance-widget, AdminGamification, settings, dashboard-previews, badge-unlock-celebration, Incentives
