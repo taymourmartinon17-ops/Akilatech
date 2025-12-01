@@ -1582,8 +1582,27 @@ export class DatabaseStorage implements IStorage {
       return clientsData.length; // All clients are up-to-date
     }
     
-    // OPTIMIZED: Use safe batch size (1500) to avoid PostgreSQL parameter limit (65535)
-    const BATCH_SIZE = 1500;
+    // OPTIMIZED: Dynamic batch sizing based on data size
+    // PostgreSQL parameter limit is 65535, each client has ~25 fields
+    // Smaller datasets can use larger batches, larger ones need smaller batches
+    const FIELDS_PER_CLIENT = 25;
+    const MAX_PARAMS = 60000; // Leave margin below 65535
+    const calculatedBatchSize = Math.floor(MAX_PARAMS / FIELDS_PER_CLIENT);
+    
+    // For very large datasets (>5000), use smaller batches to prevent timeouts
+    // For medium datasets, use calculated batch size
+    // For small datasets (<500), process all at once
+    let BATCH_SIZE: number;
+    if (changedClients.length <= 500) {
+      BATCH_SIZE = changedClients.length; // Process all at once for small datasets
+    } else if (changedClients.length > 5000) {
+      BATCH_SIZE = 1000; // Smaller batches for very large datasets
+    } else {
+      BATCH_SIZE = Math.min(calculatedBatchSize, 1500); // Dynamic sizing with cap
+    }
+    
+    console.log(`[BULK UPSERT] Using dynamic batch size: ${BATCH_SIZE} (${changedClients.length} clients)`);
+    
     let totalProcessed = 0;
     const totalBatches = Math.ceil(changedClients.length / BATCH_SIZE);
     

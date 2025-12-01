@@ -1767,10 +1767,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process Excel file with TypeScript in background
       (async () => {
         try {
+          // Stage 1: Parse and process Excel file (10% of work)
+          await storage.setProgressStatus(true, 10, 100, 'Parsing Excel file...');
           console.log("[EXCEL UPLOAD] Processing with TypeScript processor...");
           const result = await processExcelData(filePath, organizationId, customWeights);
           
-          // Clean up uploaded file
+          // Stage 2: Cleanup (15% of work)
+          await storage.setProgressStatus(true, 15, 100, 'Cleaning up temporary files...');
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
             console.log(`[EXCEL UPLOAD] Cleaned up uploaded file: ${filePath}`);
@@ -1780,7 +1783,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error(result.error || 'Processing failed');
           }
 
-          // Log data quality report
+          // Stage 3: Log data quality (20% of work)
+          await storage.setProgressStatus(true, 20, 100, 'Validating data quality...');
           if (result.qualityReport) {
             const dq = result.qualityReport;
             console.log(`[DATA QUALITY] Upload - Errors: ${dq.errors?.length || 0}, Warnings: ${dq.warnings?.length || 0}`);
@@ -1792,12 +1796,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Process clients using bulk operations
+          // Stage 4: Bulk upsert clients (30-85% of work)
           const totalClients = result.clients.length;
           console.log(`[EXCEL UPLOAD] Processing ${totalClients} clients`);
+          await storage.setProgressStatus(true, 30, 100, `Saving ${totalClients} client records...`);
 
           const processedCount = await storage.bulkUpsertClients(organizationId, result.clients);
-          await storage.setProgressStatus(true, processedCount, totalClients, `Completed: ${processedCount}/${totalClients} clients processed`);
+          
+          // Stage 5: Provisioning accounts (85-95% of work)
+          await storage.setProgressStatus(true, 85, 100, `Saved ${processedCount} clients. Provisioning accounts...`);
           
           console.log(`[EXCEL UPLOAD] Upload successful! Processed ${totalClients} clients`);
           
@@ -1820,6 +1827,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (provisioningErrors.length > 0) {
             completionMessage += `. ${provisioningErrors.length} provisioning error(s)`;
           }
+          
+          // Stage 6: Final completion (100%)
+          await storage.setProgressStatus(false, 100, 100, completionMessage);
           
           // Final success update with provisioning info
           await storage.createDataSync({

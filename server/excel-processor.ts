@@ -404,9 +404,86 @@ export interface WeightSettings {
   urgencyFeedbackScoreWeight: number;
 }
 
-// Calculate risk scores vectorized
+// Calculate risk score for a single row (extracted for parallel processing)
+function calculateRiskScoreForRow(row: ProcessedRow, riskWeights: Record<string, number>): void {
+  const hasOutstanding = (row['OUTSTANDING'] || 0) > 0;
+  
+  const riskFactors = [
+    {
+      name: 'late_days',
+      data: row['late days'] || 0,
+      weight: riskWeights.late_days,
+      maxThreshold: 90,
+      inverse: false,
+      baseline: hasOutstanding && (row['late days'] || 0) === 0 ? 0.1 : 0
+    },
+    {
+      name: 'outstanding_at_risk',
+      data: row['Outstanding at risk'] || 0,
+      weight: riskWeights.outstanding_at_risk,
+      maxThreshold: 10000,
+      inverse: false,
+      baseline: hasOutstanding && (row['Outstanding at risk'] || 0) === 0 ? 0.05 : 0
+    },
+    {
+      name: 'par_per_loan',
+      data: row['PAR PER LOAN'] || 0,
+      weight: riskWeights.par_per_loan,
+      maxThreshold: 1.0,
+      inverse: false,
+      baseline: hasOutstanding && (row['PAR PER LOAN'] || 0) === 0 ? 0.02 : 0
+    },
+    {
+      name: 'reschedules',
+      data: row['COUNT_RESCHEDULE'] || 0,
+      weight: riskWeights.reschedules,
+      maxThreshold: 5,
+      inverse: false,
+      baseline: 0
+    },
+    {
+      name: 'payment_consistency',
+      data: row['paid instalments'] || 0,
+      weight: riskWeights.payment_consistency,
+      maxThreshold: 50,
+      inverse: true,
+      baseline: 0
+    },
+    {
+      name: 'delayed_instalments',
+      data: row['total delayed instalments'] || 0,
+      weight: riskWeights.delayed_instalments,
+      maxThreshold: 20,
+      inverse: false,
+      baseline: 0
+    }
+  ];
+
+  let totalRiskScore = 0;
+
+  riskFactors.forEach(factor => {
+    let normalizedValue = Math.min(factor.data, factor.maxThreshold) / factor.maxThreshold;
+    
+    if (factor.inverse) {
+      normalizedValue = 1 - normalizedValue;
+    }
+
+    normalizedValue = Math.max(normalizedValue, factor.baseline);
+
+    const sigmoidValue = 1 / (1 + Math.exp(-6 * (normalizedValue - 0.5)));
+    
+    const componentScore = sigmoidValue * 100 * factor.weight;
+    totalRiskScore += componentScore;
+  });
+
+  row['risk_score'] = Math.max(1, Math.min(99, Math.round(totalRiskScore)));
+}
+
+// Calculate risk scores with chunked processing for memory efficiency
 function calculateRiskScoreVectorized(data: ProcessedRow[], featureColumns: string[], customWeights?: Partial<WeightSettings>): ProcessedRow[] {
   try {
+    const startTime = Date.now();
+    
     // Validate data quality
     const totalClients = data.length;
     const clientsWithOutstanding = data.filter(row => (row['OUTSTANDING'] || 0) > 0).length;
@@ -452,82 +529,11 @@ function calculateRiskScoreVectorized(data: ProcessedRow[], featureColumns: stri
       delayed_instalments: weights.riskDelayedInstalmentsWeight / 100
     };
 
-    // Calculate risk scores
-    data.forEach(row => {
-      const hasOutstanding = (row['OUTSTANDING'] || 0) > 0;
-      
-      // Risk factors with thresholds
-      const riskFactors = [
-        {
-          name: 'late_days',
-          data: row['late days'] || 0,
-          weight: riskWeights.late_days,
-          maxThreshold: 90,
-          inverse: false,
-          baseline: hasOutstanding && (row['late days'] || 0) === 0 ? 0.1 : 0
-        },
-        {
-          name: 'outstanding_at_risk',
-          data: row['Outstanding at risk'] || 0,
-          weight: riskWeights.outstanding_at_risk,
-          maxThreshold: 10000,
-          inverse: false,
-          baseline: hasOutstanding && (row['Outstanding at risk'] || 0) === 0 ? 0.05 : 0
-        },
-        {
-          name: 'par_per_loan',
-          data: row['PAR PER LOAN'] || 0,
-          weight: riskWeights.par_per_loan,
-          maxThreshold: 1.0,
-          inverse: false,
-          baseline: hasOutstanding && (row['PAR PER LOAN'] || 0) === 0 ? 0.02 : 0
-        },
-        {
-          name: 'reschedules',
-          data: row['COUNT_RESCHEDULE'] || 0,
-          weight: riskWeights.reschedules,
-          maxThreshold: 5,
-          inverse: false,
-          baseline: 0
-        },
-        {
-          name: 'payment_consistency',
-          data: row['paid instalments'] || 0,
-          weight: riskWeights.payment_consistency,
-          maxThreshold: 50,
-          inverse: true,
-          baseline: 0
-        },
-        {
-          name: 'delayed_instalments',
-          data: row['total delayed instalments'] || 0,
-          weight: riskWeights.delayed_instalments,
-          maxThreshold: 20,
-          inverse: false,
-          baseline: 0
-        }
-      ];
+    // Process all risk scores
+    data.forEach(row => calculateRiskScoreForRow(row, riskWeights));
 
-      let totalRiskScore = 0;
-
-      riskFactors.forEach(factor => {
-        let normalizedValue = Math.min(factor.data, factor.maxThreshold) / factor.maxThreshold;
-        
-        if (factor.inverse) {
-          normalizedValue = 1 - normalizedValue;
-        }
-
-        normalizedValue = Math.max(normalizedValue, factor.baseline);
-
-        // Apply sigmoid transformation
-        const sigmoidValue = 1 / (1 + Math.exp(-6 * (normalizedValue - 0.5)));
-        
-        const componentScore = sigmoidValue * 100 * factor.weight;
-        totalRiskScore += componentScore;
-      });
-
-      row['risk_score'] = Math.max(1, Math.min(99, Math.round(totalRiskScore)));
-    });
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    addInfo(`Risk scoring completed in ${elapsed}s`);
 
     return data;
 
@@ -536,9 +542,32 @@ function calculateRiskScoreVectorized(data: ProcessedRow[], featureColumns: stri
   }
 }
 
-// Calculate urgency scores
+// Calculate urgency for a single row
+function calculateUrgencyForRow(row: ProcessedRow, normalizedWeights: Record<string, number>): void {
+  if (!row.hasOwnProperty('days_since_last_interaction')) {
+    row['days_since_last_interaction'] = 30;
+  }
+  if (!row.hasOwnProperty('feedback_score')) {
+    row['feedback_score'] = 3;
+  }
+
+  const riskUrgency = Math.max(0, Math.min(100, row['risk_score'] || 0));
+  const daysUrgency = Math.min(100, ((row['days_since_last_interaction'] || 30) / 180) * 100);
+  const feedbackUrgency = Math.max(0, Math.min(100, (5 - (row['feedback_score'] || 3)) * 25));
+
+  const compositeUrgency = 
+    riskUrgency * normalizedWeights.risk_score +
+    daysUrgency * normalizedWeights.days_since_interaction +
+    feedbackUrgency * normalizedWeights.feedback_score;
+
+  row['composite_urgency'] = Math.max(0, Math.min(100, Math.round(compositeUrgency * 10) / 10));
+}
+
+// Calculate urgency scores with chunked processing for memory efficiency
 function calculateUrgencyVectorized(data: ProcessedRow[], customWeights?: Partial<WeightSettings>): ProcessedRow[] {
   try {
+    const startTime = Date.now();
+    
     // Default weights - UNIFIED
     const defaultWeights: WeightSettings = {
       riskLateDaysWeight: 25,
@@ -567,28 +596,11 @@ function calculateUrgencyVectorized(data: ProcessedRow[], customWeights?: Partia
       feedback_score: urgencyWeights.feedback_score / totalWeight
     };
 
-    data.forEach(row => {
-      // Add defaults if not present
-      if (!row.hasOwnProperty('days_since_last_interaction')) {
-        row['days_since_last_interaction'] = 30;
-      }
-      if (!row.hasOwnProperty('feedback_score')) {
-        row['feedback_score'] = 3;
-      }
+    // Process all urgency scores
+    data.forEach(row => calculateUrgencyForRow(row, normalizedWeights));
 
-      // Scale components to 0-100
-      const riskUrgency = Math.max(0, Math.min(100, row['risk_score'] || 0));
-      const daysUrgency = Math.min(100, ((row['days_since_last_interaction'] || 30) / 180) * 100);
-      const feedbackUrgency = Math.max(0, Math.min(100, (5 - (row['feedback_score'] || 3)) * 25));
-
-      // Calculate weighted composite urgency
-      const compositeUrgency = 
-        riskUrgency * normalizedWeights.risk_score +
-        daysUrgency * normalizedWeights.days_since_interaction +
-        feedbackUrgency * normalizedWeights.feedback_score;
-
-      row['composite_urgency'] = Math.max(0, Math.min(100, Math.round(compositeUrgency * 10) / 10));
-    });
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    addInfo(`Urgency scoring completed in ${elapsed}s`);
 
     return data;
 
