@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication routes
   
-  // Check if loan officer exists
+  // Check if loan officer exists (in client data or as a user)
   app.get("/api/auth/check/:loanOfficerId", async (req, res) => {
     try {
       const { loanOfficerId } = req.params;
@@ -392,12 +392,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Organization ID is required" });
       }
       
+      // First check if user account already exists
       const user = await storage.getUserByLoanOfficerId(organizationId, loanOfficerId);
       
+      if (user) {
+        // User account exists
+        return res.json({ 
+          exists: true,
+          isRegistered: true,
+          loanOfficerId: loanOfficerId,
+          needsPasswordSetup: !user.password || user.requiresPasswordSetup,
+          hasPassword: !!user.password && !user.requiresPasswordSetup
+        });
+      }
+      
+      // Check if loan officer ID exists in client data (pre-registered via Excel sync)
+      const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
+      const existsInClientData = clientsForOfficer.length > 0;
+      
       res.json({ 
-        exists: !!user,
+        exists: existsInClientData,
+        isRegistered: false,
         loanOfficerId: loanOfficerId,
-        needsPasswordSetup: user ? !user.password : false
+        needsPasswordSetup: existsInClientData, // If in client data, they can set up password
+        hasPassword: false
       });
     } catch (error) {
       console.error("Check user error:", error);
@@ -405,7 +423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Signup route (with rate limiting)
+  // Signup route (with rate limiting) - ONLY for pre-registered loan officer IDs
+  // Loan officer IDs must exist in client data (from Excel sync) before they can set up an account
   app.post("/api/auth/signup", authLimiter, async (req, res) => {
     try {
       const { loanOfficerId, password, name, organizationId } = req.body;
@@ -421,15 +440,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user already exists in this organization
       const existingUser = await storage.getUserByLoanOfficerId(organizationId, loanOfficerId);
+      
       if (existingUser) {
-        return res.status(409).json({ message: "Loan Officer ID already exists in this organization" });
+        // User exists - check if they already have a password set
+        if (existingUser.password && !existingUser.requiresPasswordSetup) {
+          return res.status(409).json({ 
+            message: "This Loan Officer ID already has an account. Please log in instead." 
+          });
+        }
+        
+        // User exists but needs password setup - update their password and name
+        await storage.updateUserPassword(existingUser.id, password);
+        
+        // Update user name if different
+        if (name && name !== existingUser.name) {
+          await storage.updateUser(existingUser.id, { name });
+        }
+        
+        // Create session
+        req.session.user = {
+          id: existingUser.id,
+          organizationId: existingUser.organizationId,
+          loanOfficerId: existingUser.loanOfficerId,
+          name: name || existingUser.name,
+          isAdmin: existingUser.isAdmin,
+          isSuperAdmin: existingUser.isSuperAdmin
+        };
+        
+        return req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ message: "Account setup failed - session error" });
+          }
+          res.status(200).json({ 
+            user: { 
+              id: existingUser.id, 
+              organizationId: existingUser.organizationId,
+              loanOfficerId: existingUser.loanOfficerId, 
+              name: name || existingUser.name,
+              isAdmin: existingUser.isAdmin,
+              isSuperAdmin: existingUser.isSuperAdmin
+            } 
+          });
+        });
       }
       
+      // User doesn't exist - check if loan officer ID exists in client data
+      const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
+      
+      if (clientsForOfficer.length === 0) {
+        // Loan officer ID not found in client data - reject signup
+        return res.status(403).json({ 
+          message: "This Loan Officer ID is not registered in the system. Please contact your administrator to be added." 
+        });
+      }
+      
+      // Loan officer ID exists in client data - create new user account
       const user = await storage.createUser({
         loanOfficerId,
         password,
         name,
-        organizationId
+        organizationId,
+        requiresPasswordSetup: false // Password is being set now
       });
       
       // Create session after signup

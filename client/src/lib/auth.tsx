@@ -10,10 +10,15 @@ interface User {
   isSuperAdmin?: boolean;
 }
 
+interface SignupResult {
+  success: boolean;
+  error?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (organizationId: string, loanOfficerId: string, password: string, skipRedirect?: boolean) => Promise<{ success: boolean; needsPasswordSetup?: boolean; setupToken?: string; error?: string }>;
-  signup: (organizationId: string, loanOfficerId: string, password: string, name: string) => Promise<boolean>;
+  signup: (organizationId: string, loanOfficerId: string, password: string, name: string) => Promise<SignupResult>;
   setPassword: (setupToken: string, password: string) => Promise<boolean>;
   logout: () => void;
   changeLoanOfficerId: (newLoanOfficerId: string) => void;
@@ -72,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (organizationId: string, loanOfficerId: string, password: string, name: string): Promise<boolean> => {
+  const signup = async (organizationId: string, loanOfficerId: string, password: string, name: string): Promise<SignupResult> => {
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -87,12 +92,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('user', JSON.stringify(data.user));
         // Redirect super admins to super admin panel, others to dashboard
         setLocation(data.user.isSuperAdmin ? '/super-admin' : '/dashboard');
-        return true;
+        return { success: true };
       }
-      return false;
+      
+      // Handle specific error responses
+      const errorData = await response.json().catch(() => ({ message: 'Signup failed' }));
+      
+      if (response.status === 409) {
+        // User already has an account
+        return { success: false, error: errorData.message || 'This Loan Officer ID already has an account.' };
+      } else if (response.status === 403) {
+        // Loan officer ID not in client data
+        return { success: false, error: errorData.message || 'This Loan Officer ID is not registered in the system.' };
+      }
+      
+      return { success: false, error: errorData.message || 'Failed to create account. Please try again.' };
     } catch (error) {
       console.error('Signup failed:', error);
-      return false;
+      return { success: false, error: 'Connection error. Please try again.' };
     }
   };
 

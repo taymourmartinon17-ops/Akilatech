@@ -12,12 +12,14 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from "lucide-react";
 
-type AuthStep = 'check-id' | 'login' | 'signup' | 'set-password';
+type AuthStep = 'check-id' | 'login' | 'signup' | 'set-password' | 'not-registered';
 
 interface CheckUserResponse {
   exists: boolean;
+  isRegistered: boolean;
   loanOfficerId: string;
   needsPasswordSetup?: boolean;
+  hasPassword?: boolean;
 }
 
 export default function Login() {
@@ -51,9 +53,17 @@ export default function Login() {
       const response = await fetch(`/api/auth/check/${encodeURIComponent(loanOfficerId.trim())}?organizationId=${encodeURIComponent(organizationId.trim())}`);
       const data: CheckUserResponse = await response.json();
       
-      if (data.exists) {
+      if (!data.exists) {
+        // Loan officer ID not found in client data OR user records - cannot proceed
+        setAuthStep('not-registered');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (data.isRegistered) {
+        // User account already exists
         if (data.needsPasswordSetup) {
-          // Need to get a setup token by attempting login without password
+          // User exists but needs to set password for first time
           const loginResult = await login(organizationId, loanOfficerId, "", true); // skipRedirect = true
           if (loginResult.needsPasswordSetup && loginResult.setupToken) {
             setSetupToken(loginResult.setupToken);
@@ -66,9 +76,11 @@ export default function Login() {
             });
           }
         } else {
+          // User has password set - go to login
           setAuthStep('login');
         }
       } else {
+        // Loan officer ID exists in client data but no user account yet - allow signup
         setAuthStep('signup');
       }
     } catch (error) {
@@ -135,12 +147,12 @@ export default function Login() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const success = await signup(organizationId, loanOfficerId, password, name);
+    const result = await signup(organizationId, loanOfficerId, password, name);
     
-    if (!success) {
+    if (!result.success) {
       toast({
         title: t('auth.signupFailed'), 
-        description: t('auth.failedToCreate'),
+        description: result.error || t('auth.failedToCreate'),
         variant: "destructive",
       });
     } else {
@@ -387,6 +399,42 @@ export default function Login() {
                 </Button>
               </div>
             </form>
+          )}
+
+          {authStep === 'not-registered' && (
+            <div className="space-y-4" data-testid="not-registered-message">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i className="fas fa-exclamation-triangle text-xl text-destructive"></i>
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {t('auth.notRegisteredTitle', { defaultValue: 'Loan Officer ID Not Found' })}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('auth.notRegisteredMessage', { defaultValue: 'The Loan Officer ID you entered is not registered in the system.' })}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground mb-2">
+                  {t('auth.whatToDo', { defaultValue: 'What you can do:' })}
+                </p>
+                <ul className="list-disc list-inside space-y-1 ms-2">
+                  <li>{t('auth.checkIdTypo', { defaultValue: 'Check if you typed your Loan Officer ID correctly' })}</li>
+                  <li>{t('auth.contactAdmin', { defaultValue: 'Contact your administrator to be added to the system' })}</li>
+                  <li>{t('auth.waitForSync', { defaultValue: 'Wait for the next data sync if you were recently added' })}</li>
+                </ul>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleBack}
+                data-testid="button-try-again"
+              >
+                <i className="fas fa-arrow-left me-2"></i>
+                {t('auth.tryAgain', { defaultValue: 'Try Again' })}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

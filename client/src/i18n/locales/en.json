@@ -82,7 +82,16 @@
     "failedToInitialize": "Failed to initialize password setup. Please try again.",
     "securityTokenMissing": "Security token is missing. Please try logging in again.",
     "failedToCheck": "Failed to check Loan Officer ID. Please try again.",
-    "notAuthenticated": "Not authenticated"
+    "notAuthenticated": "Not authenticated",
+    "notRegisteredTitle": "Loan Officer ID Not Found",
+    "notRegisteredMessage": "The Loan Officer ID you entered is not registered in the system.",
+    "whatToDo": "What you can do:",
+    "checkIdTypo": "Check if you typed your Loan Officer ID correctly",
+    "contactAdmin": "Contact your administrator to be added to the system",
+    "waitForSync": "Wait for the next data sync if you were recently added",
+    "tryAgain": "Try Again",
+    "alreadyHasAccount": "This Loan Officer ID already has an account. Please log in instead.",
+    "notInSystem": "This Loan Officer ID is not registered in the system. Please contact your administrator to be added."
   },
   "navigation": {
     "dashboard": "Dashboard",

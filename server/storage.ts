@@ -51,6 +51,7 @@ export interface IStorage {
   getUserByLoanOfficerId(organizationId: string | null, loanOfficerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(userId: string, password: string): Promise<void>;
+  updateUser(userId: string, updates: Partial<User>): Promise<User | undefined>;
   
   // Client methods (scoped by organization)
   getAllClients(organizationId: string): Promise<Client[]>;
@@ -299,6 +300,21 @@ export class MemStorage implements IStorage {
       user.requiresPasswordSetup = false; // Clear the flag after password is set
       this.users.set(userId, user);
     }
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    const updatedUser: User = {
+      ...user,
+      ...updates,
+      id: user.id, // Ensure ID cannot be changed
+      loanOfficerId: user.loanOfficerId, // Ensure loan officer ID cannot be changed
+      organizationId: user.organizationId, // Ensure organization cannot be changed
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 
   // Utility function to calculate urgency classification from score
@@ -1392,6 +1408,18 @@ export class DatabaseStorage implements IStorage {
       password: hashedPassword,
       requiresPasswordSetup: false // Clear the flag after password is set
     }).where(eq(users.id, userId));
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<User | undefined> {
+    // Remove fields that shouldn't be updated
+    const { id, loanOfficerId, organizationId, ...safeUpdates } = updates;
+    
+    const [updatedUser] = await db.update(users)
+      .set(safeUpdates)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser || undefined;
   }
 
   // Client methods
