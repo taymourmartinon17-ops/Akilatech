@@ -226,3 +226,18 @@ See DEPLOYMENT.md for comprehensive deployment documentation.
   - Modal and dialog positioning
 - ✅ **Arabic Font Support**: Added Noto Sans Arabic, Cairo, Tajawal with system fallbacks
 - ✅ **Components Updated**: client-table, navigation, login, calendar, admin-dashboard, score-explanation-modal, data-sync, performance-widget, AdminGamification, settings, dashboard-previews, badge-unlock-celebration, Incentives
+
+### Authentication Security Enhancement (December 1, 2025)
+- ✅ **Pre-Registration Required**: Loan Officer IDs must exist in client data (from Excel sync) before accounts can be created
+- ✅ **One Account Per ID**: Each Loan Officer ID can only have one account per organization
+  - Signup endpoint checks if user already has password set
+  - Returns 409 error with clear message if account already exists
+- ✅ **Client Data Validation**: 
+  - Check-id endpoint verifies both user records AND client data
+  - Signup endpoint validates loan officer ID exists in client data before creating account
+  - Returns 403 error if ID not found in system
+- ✅ **Clear Error Messages**:
+  - "Not Registered" UI state with helpful guidance
+  - Localized error messages in English and Arabic
+  - Suggestions for next steps (check typo, contact admin, wait for sync)
+- ✅ **Storage Layer**: Added `updateUser` method to storage interface for user profile updates
