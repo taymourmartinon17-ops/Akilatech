@@ -235,52 +235,53 @@ export default function Dashboard() {
 
   // Show actions dashboard for regular loan officers
   return (
-    <div className="min-h-screen bg-indigo-50 dark:bg-gray-900" data-testid="dashboard-page">
+    <div className="min-h-screen bg-indigo-50 dark:bg-gray-900 pb-20 md:pb-0" data-testid="dashboard-page">
       <Navigation />
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
           {/* Left Column: Performance Graphs + Actions */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Performance Graphs */}
+          <div className="lg:col-span-3 space-y-4 md:space-y-6">
+            {/* Performance Graphs - Compact on mobile */}
             <PerformanceGraphs loanOfficerId={user.loanOfficerId} />
             
-            {/* Actions Header */}
+            {/* Actions Header - Compact on mobile */}
             <motion.div 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-indigo-600 dark:bg-indigo-700 rounded-xl p-6 text-white shadow-lg"
+              className="bg-indigo-600 dark:bg-indigo-700 rounded-xl p-4 md:p-6 text-white shadow-lg"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <motion.div 
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                    className="p-3 bg-white/20 rounded-lg backdrop-blur-sm"
+                    className="p-2 md:p-3 bg-white/20 rounded-lg backdrop-blur-sm"
                   >
-                    <Calendar className="h-6 w-6" />
+                    <Calendar className="h-5 w-5 md:h-6 md:w-6" />
                   </motion.div>
                   <div>
-                    <h1 className="text-3xl font-bold" data-testid="dashboard-title">
+                    <h1 className="text-xl md:text-3xl font-bold" data-testid="dashboard-title">
                       {t('actions.pageTitle')}
                     </h1>
-                    <p className="text-indigo-100 mt-1" data-testid="dashboard-subtitle">
+                    <p className="text-indigo-100 mt-0.5 md:mt-1 text-sm md:text-base" data-testid="dashboard-subtitle">
                       {t('actions.pageSubtitle')}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   <Button 
                     variant="secondary"
+                    size="sm"
                     onClick={() => refetch()}
-                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30 transition-all duration-200"
+                    className="h-11 flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30 transition-all duration-200"
                     data-testid="button-refresh-actions"
                   >
                     <RefreshCw className="h-4 w-4" />
-                    {t('common.refresh')}
+                    <span className="hidden sm:inline">{t('common.refresh')}</span>
                   </Button>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
+                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs md:text-sm px-2 md:px-3 py-1">
                     {clientsWithRecommendations.length} {t('dashboard.clientsCount')}
                   </Badge>
                 </div>
@@ -295,9 +296,9 @@ export default function Dashboard() {
               className="bg-white dark:bg-gray-800 rounded-xl border border-indigo-200 dark:border-indigo-800 shadow-lg overflow-hidden" 
               data-testid="actions-list"
             >
-              <div className="px-6 py-4 border-b border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/20">
-                <h2 className="text-lg font-semibold text-foreground">{t('actions.recommendedActions')}</h2>
-                <p className="text-sm text-muted-foreground mt-1">{t('actions.prioritizedByUrgency')}</p>
+              <div className="px-4 md:px-6 py-3 md:py-4 border-b border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/20">
+                <h2 className="text-base md:text-lg font-semibold text-foreground">{t('actions.recommendedActions')}</h2>
+                <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">{t('actions.prioritizedByUrgency')}</p>
               </div>
               
               <div className="divide-y divide-border">
@@ -309,28 +310,32 @@ export default function Dashboard() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-                      className="p-6 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200" 
+                      className="p-4 md:p-6 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200" 
                       data-testid={`action-item-${client.clientId}`}
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-0">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
+                          {/* Mobile: Stacked header with name and badges */}
+                          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
                             <button
                               onClick={() => handleClientClick(client)}
-                              className="text-lg font-medium text-foreground hover:text-primary hover:underline"
+                              className="text-base md:text-lg font-medium text-foreground hover:text-primary hover:underline min-h-[44px] flex items-center"
                               data-testid={`button-client-${client.clientId}`}
                             >
                               {client.name}
                             </button>
-                            <span className="text-sm text-muted-foreground" data-testid={`text-client-id-${client.clientId}`}>
+                            <span className="text-xs md:text-sm text-muted-foreground" data-testid={`text-client-id-${client.clientId}`}>
                               {client.clientId}
                             </span>
-                            <Badge variant="outline" data-testid={`badge-risk-${client.clientId}`}>
-                              {t('client.riskScore')}: {client.riskScore.toFixed(0)}
-                            </Badge>
-                            <Badge variant="outline" data-testid={`badge-urgency-score-${client.clientId}`}>
-                              {t('client.urgencyScore')}: {(client.compositeUrgency || 0).toFixed(1)}
-                            </Badge>
+                            {/* Show badges on larger screens */}
+                            <div className="hidden md:flex items-center gap-2">
+                              <Badge variant="outline" data-testid={`badge-risk-${client.clientId}`}>
+                                {t('client.riskScore')}: {client.riskScore.toFixed(0)}
+                              </Badge>
+                              <Badge variant="outline" data-testid={`badge-urgency-score-${client.clientId}`}>
+                                {t('client.urgencyScore')}: {(client.compositeUrgency || 0).toFixed(1)}
+                              </Badge>
+                            </div>
                             <Badge 
                               className={client.urgencyClassification === 'Extremely Urgent' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 
                                        client.urgencyClassification === 'Urgent' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
@@ -345,27 +350,37 @@ export default function Dashboard() {
                             </Badge>
                           </div>
                           
+                          {/* Mobile: Compact score badges */}
+                          <div className="flex md:hidden gap-2 mb-3">
+                            <Badge variant="outline" className="text-xs" data-testid={`badge-risk-mobile-${client.clientId}`}>
+                              {t('client.riskScore')}: {client.riskScore.toFixed(0)}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs" data-testid={`badge-urgency-score-mobile-${client.clientId}`}>
+                              {t('client.urgencyScore')}: {(client.compositeUrgency || 0).toFixed(1)}
+                            </Badge>
+                          </div>
+                          
                           <div className="space-y-2">
-                            {client.actionSuggestions?.map((suggestion, index) => (
+                            {client.actionSuggestions?.map((suggestion, idx) => (
                               <div 
-                                key={index} 
-                                className="flex items-start gap-3 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-indigo-200 dark:border-indigo-800"
+                                key={idx} 
+                                className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-indigo-200 dark:border-indigo-800"
                                 onClick={() => handleActionClick(client, suggestion)}
-                                data-testid={`suggestion-${client.clientId}-${index}`}
+                                data-testid={`suggestion-${client.clientId}-${idx}`}
                               >
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 shrink-0">
                                   <div className={`p-2 rounded-lg ${getUrgencyColor(suggestion.urgency)}`}>
-                                    <i className={`fas ${getActionIcon(suggestion.action)} text-white`}></i>
+                                    <i className={`fas ${getActionIcon(suggestion.action)} text-white text-sm`}></i>
                                   </div>
-                                  <Badge className={`text-xs px-2 py-0 ${getUrgencyColor(suggestion.urgency)} text-white border-0`}>
+                                  <Badge className={`text-xs px-1.5 md:px-2 py-0 ${getUrgencyColor(suggestion.urgency)} text-white border-0`}>
                                     {suggestion.urgency.replace('_', ' ')}
                                   </Badge>
                                 </div>
-                                <div className="flex-1">
-                                  <p className="font-semibold text-foreground text-sm">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-foreground text-xs md:text-sm">
                                     {suggestion.description}
                                   </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 md:line-clamp-none">
                                     {suggestion.reasoning}
                                   </p>
                                   <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
@@ -378,15 +393,16 @@ export default function Dashboard() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2 ms-4">
+                        {/* Action buttons - Stacked on mobile, row on desktop */}
+                        <div className="flex flex-wrap items-center gap-2 md:ms-4">
                           {client.actionSuggestions?.filter(suggestion => 
                             suggestion.action === 'call' || suggestion.action === 'visit'
-                          ).map((suggestion, index) => (
+                          ).map((suggestion, idx) => (
                             <Button
-                              key={index}
+                              key={idx}
                               size="sm"
                               onClick={() => handlePlanAction(client, suggestion.action)}
-                              className={`${
+                              className={`h-11 ${
                                 suggestion.action === 'call' 
                                   ? 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg' 
                                   : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg'
@@ -403,11 +419,13 @@ export default function Dashboard() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-11"
                             onClick={() => handleClientClick(client)}
                             data-testid={`button-view-details-${client.clientId}`}
                           >
                             <i className="fas fa-eye me-1"></i>
-                            {t('common.viewDetails')}
+                            <span className="hidden sm:inline">{t('common.viewDetails')}</span>
+                            <span className="sm:hidden">{t('common.details')}</span>
                           </Button>
                           
                           <DropdownMenu>
@@ -415,11 +433,11 @@ export default function Dashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="flex items-center gap-1"
+                                className="h-11 flex items-center gap-1"
                                 data-testid={`button-snooze-${client.clientId}`}
                               >
-                                <Clock className="h-3 w-3" />
-                                {t('actions.snoozeFor')}
+                                <Clock className="h-4 w-4" />
+                                <span className="hidden sm:inline">{t('actions.snoozeFor')}</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -448,18 +466,18 @@ export default function Dashboard() {
                     </motion.div>
                   ))
                 ) : (
-                  <div className="p-8 text-center" data-testid="no-actions">
-                    <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
-                    <h3 className="text-lg font-medium text-foreground mb-2">{t('actions.noUrgentActions')}</h3>
-                    <p className="text-muted-foreground">{t('actions.allClientsUpToDate')}</p>
+                  <div className="p-6 md:p-8 text-center" data-testid="no-actions">
+                    <i className="fas fa-check-circle text-3xl md:text-4xl text-green-500 mb-3 md:mb-4"></i>
+                    <h3 className="text-base md:text-lg font-medium text-foreground mb-2">{t('actions.noUrgentActions')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('actions.allClientsUpToDate')}</p>
                   </div>
                 )}
               </div>
             </motion.div>
           </div>
           
-          {/* Right Column: Performance Widget */}
-          <div className="lg:col-span-1">
+          {/* Right Column: Performance Widget - Shows above actions on mobile */}
+          <div className="lg:col-span-1 order-first lg:order-none">
             <PerformanceWidget />
           </div>
         </div>

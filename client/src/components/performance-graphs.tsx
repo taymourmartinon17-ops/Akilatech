@@ -6,6 +6,7 @@ import { TrendingUp, Users, DollarSign, Target, ArrowUp, ArrowDown } from 'lucid
 import type { Client, Visit, PortfolioSnapshot } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceGraphsProps {
   loanOfficerId: string;
@@ -13,6 +14,12 @@ interface PerformanceGraphsProps {
 
 export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  
+  const chartHeight = isMobile ? 140 : 200;
+  const axisFontSize = isMobile ? '10px' : '12px';
+  const axisWidth = isMobile ? 40 : 50;
+  const tickCount = isMobile ? 4 : 5;
   
   // Reactive dark mode detection
   const [isDark, setIsDark] = useState(() => 
@@ -163,7 +170,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
     >
       {/* Wallet Size Growth */}
       <motion.div 
@@ -173,32 +180,32 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
         className="rounded-xl border border-green-200 dark:border-green-800 shadow-lg overflow-hidden" 
         data-testid="graph-wallet-growth"
       >
-        <div className="bg-emerald-600 p-5 text-white">
+        <div className="bg-emerald-600 p-3 md:p-5 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <DollarSign className="h-6 w-6" />
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <DollarSign className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">{t('performanceGraphs.portfolioValue')}</h3>
-                <p className="text-sm text-green-100">{t('performanceGraphs.portfolioValueDesc')}</p>
+                <h3 className="font-bold text-sm md:text-lg">{t('performanceGraphs.portfolioValue')}</h3>
+                <p className="text-xs md:text-sm text-green-100 hidden sm:block">{t('performanceGraphs.portfolioValueDesc')}</p>
               </div>
             </div>
             <div className="text-end">
-              <div className="text-2xl font-bold">{formatCurrency(totalWallet)}</div>
-              <div className={`text-sm flex items-center gap-1 justify-end ${walletGrowth >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
-                {walletGrowth >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                {Math.abs(walletGrowth).toFixed(1)}% {t('performanceGraphs.growth')}
+              <div className="text-lg md:text-2xl font-bold">{formatCurrency(totalWallet)}</div>
+              <div className={`text-xs md:text-sm flex items-center gap-1 justify-end ${walletGrowth >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
+                {walletGrowth >= 0 ? <ArrowUp className="h-3 w-3 md:h-4 md:w-4" /> : <ArrowDown className="h-3 w-3 md:h-4 md:w-4" />}
+                {Math.abs(walletGrowth).toFixed(1)}%
               </div>
             </div>
           </div>
         </div>
-        <div className="p-5 bg-white dark:bg-slate-950">
-          <ResponsiveContainer width="100%" height={200}>
+        <div className="p-3 md:p-5 bg-white dark:bg-slate-950">
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <AreaChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: '12px' }} />
-              <YAxis tick={{ fill: axisColor }} style={{ fontSize: '12px' }} tickFormatter={formatYAxis} tickCount={5} width={50} />
+              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} />
+              <YAxis tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} tickFormatter={formatYAxis} tickCount={tickCount} width={axisWidth} />
               <Tooltip content={customTooltip} />
               <Area 
                 type="monotone" 
@@ -221,39 +228,39 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
         className="rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg overflow-hidden" 
         data-testid="graph-client-growth"
       >
-        <div className="bg-indigo-600 p-5 text-white">
+        <div className="bg-indigo-600 p-3 md:p-5 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Users className="h-6 w-6" />
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Users className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">{t('performanceGraphs.clientPortfolio')}</h3>
-                <p className="text-sm text-blue-100">{t('performanceGraphs.clientPortfolioDesc')}</p>
+                <h3 className="font-bold text-sm md:text-lg">{t('performanceGraphs.clientPortfolio')}</h3>
+                <p className="text-xs md:text-sm text-blue-100 hidden sm:block">{t('performanceGraphs.clientPortfolioDesc')}</p>
               </div>
             </div>
             <div className="text-end">
-              <div className="text-2xl font-bold">{clients.length}</div>
-              <div className={`text-sm flex items-center gap-1 justify-end ${clientGrowth >= 0 ? 'text-blue-200' : 'text-indigo-200'}`}>
-                {clientGrowth >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                {Math.abs(clientGrowth).toFixed(1)}% {t('performanceGraphs.growth')}
+              <div className="text-lg md:text-2xl font-bold">{clients.length}</div>
+              <div className={`text-xs md:text-sm flex items-center gap-1 justify-end ${clientGrowth >= 0 ? 'text-blue-200' : 'text-indigo-200'}`}>
+                {clientGrowth >= 0 ? <ArrowUp className="h-3 w-3 md:h-4 md:w-4" /> : <ArrowDown className="h-3 w-3 md:h-4 md:w-4" />}
+                {Math.abs(clientGrowth).toFixed(1)}%
               </div>
             </div>
           </div>
         </div>
-        <div className="p-5 bg-white dark:bg-slate-950">
-          <ResponsiveContainer width="100%" height={200}>
+        <div className="p-3 md:p-5 bg-white dark:bg-slate-950">
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: '12px' }} />
-              <YAxis tick={{ fill: axisColor }} style={{ fontSize: '12px' }} tickCount={5} width={50} />
+              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} />
+              <YAxis tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} tickCount={tickCount} width={axisWidth} />
               <Tooltip content={customTooltip} />
               <Line 
                 type="monotone" 
                 dataKey="clients" 
                 stroke="#4f46e5" 
-                strokeWidth={3}
-                dot={{ fill: '#4f46e5', r: 4 }}
+                strokeWidth={isMobile ? 2 : 3}
+                dot={{ fill: '#4f46e5', r: isMobile ? 3 : 4 }}
                 name={t('performanceGraphs.clients')}
               />
             </LineChart>
@@ -269,32 +276,32 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
         className="rounded-xl border border-purple-200 dark:border-purple-800 shadow-lg overflow-hidden" 
         data-testid="graph-risk-trend"
       >
-        <div className="bg-purple-600 p-5 text-white">
+        <div className="bg-purple-600 p-3 md:p-5 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <TrendingUp className="h-6 w-6" />
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <TrendingUp className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">{t('performanceGraphs.riskManagement')}</h3>
-                <p className="text-sm text-purple-100">{t('performanceGraphs.riskManagementDesc')}</p>
+                <h3 className="font-bold text-sm md:text-lg">{t('performanceGraphs.riskManagement')}</h3>
+                <p className="text-xs md:text-sm text-purple-100 hidden sm:block">{t('performanceGraphs.riskManagementDesc')}</p>
               </div>
             </div>
             <div className="text-end">
-              <div className="text-2xl font-bold">{avgRisk.toFixed(1)}</div>
-              <div className={`text-sm flex items-center gap-1 justify-end ${riskReduction >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
-                {riskReduction >= 0 ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
-                {Math.abs(riskReduction).toFixed(1)}% {riskReduction >= 0 ? t('performanceGraphs.reduced') : t('performanceGraphs.increased')}
+              <div className="text-lg md:text-2xl font-bold">{avgRisk.toFixed(1)}</div>
+              <div className={`text-xs md:text-sm flex items-center gap-1 justify-end ${riskReduction >= 0 ? 'text-green-200' : 'text-purple-200'}`}>
+                {riskReduction >= 0 ? <ArrowDown className="h-3 w-3 md:h-4 md:w-4" /> : <ArrowUp className="h-3 w-3 md:h-4 md:w-4" />}
+                {Math.abs(riskReduction).toFixed(1)}%
               </div>
             </div>
           </div>
         </div>
-        <div className="p-5 bg-white dark:bg-slate-950">
-          <ResponsiveContainer width="100%" height={200}>
+        <div className="p-3 md:p-5 bg-white dark:bg-slate-950">
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <AreaChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: '12px' }} />
-              <YAxis tick={{ fill: axisColor }} style={{ fontSize: '12px' }} domain={[0, 100]} tickCount={5} width={50} />
+              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} />
+              <YAxis tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} domain={[0, 100]} tickCount={tickCount} width={axisWidth} />
               <Tooltip content={customTooltip} />
               <Area 
                 type="monotone" 
@@ -306,7 +313,7 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
-          <div className="mt-4 flex items-center justify-between text-sm">
+          <div className="mt-2 md:mt-4 flex items-center justify-between text-xs md:text-sm">
             <div className="text-gray-600 dark:text-gray-400">
               <span className="font-semibold">{highRiskClients}</span> {t('performanceGraphs.highRiskClients')}
             </div>
@@ -325,34 +332,34 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
         className="rounded-xl border border-blue-200 dark:border-blue-800 shadow-lg overflow-hidden" 
         data-testid="graph-visit-activity"
       >
-        <div className="bg-amber-600 p-5 text-white">
+        <div className="bg-amber-600 p-3 md:p-5 text-white">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Target className="h-6 w-6" />
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Target className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">{t('performanceGraphs.visitActivity')}</h3>
-                <p className="text-sm text-amber-100">{t('performanceGraphs.visitActivityDesc')}</p>
+                <h3 className="font-bold text-sm md:text-lg">{t('performanceGraphs.visitActivity')}</h3>
+                <p className="text-xs md:text-sm text-amber-100 hidden sm:block">{t('performanceGraphs.visitActivityDesc')}</p>
               </div>
             </div>
             <div className="text-end">
-              <div className="text-2xl font-bold">{completedVisits}</div>
-              <div className="text-sm text-amber-200">{t('performanceGraphs.completedVisits')}</div>
+              <div className="text-lg md:text-2xl font-bold">{completedVisits}</div>
+              <div className="text-xs md:text-sm text-amber-200">{t('performanceGraphs.completedVisits')}</div>
             </div>
           </div>
         </div>
-        <div className="p-5 bg-white dark:bg-slate-950">
-          <ResponsiveContainer width="100%" height={200}>
+        <div className="p-3 md:p-5 bg-white dark:bg-slate-950">
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: '12px' }} />
-              <YAxis tick={{ fill: axisColor }} style={{ fontSize: '12px' }} tickCount={5} width={50} />
+              <XAxis dataKey="month" tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} />
+              <YAxis tick={{ fill: axisColor }} style={{ fontSize: axisFontSize }} tickCount={tickCount} width={axisWidth} />
               <Tooltip content={customTooltip} />
               <Bar 
                 dataKey="visits" 
                 fill="#d97706" 
-                radius={[8, 8, 0, 0]}
+                radius={isMobile ? [4, 4, 0, 0] : [8, 8, 0, 0]}
                 name={t('performanceGraphs.visits')}
               />
             </BarChart>
