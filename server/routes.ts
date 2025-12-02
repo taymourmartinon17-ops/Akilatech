@@ -11,7 +11,7 @@ import rateLimit from "express-rate-limit";
 // Removed GROQ AI and Python imports - now using only TypeScript-based weight calculations
 import { startDataSyncScheduler } from "./scheduler";
 import { processExcelData, type WeightSettings } from "./excel-processor";
-import { registerMigrationRoutes } from "./migration";
+// Migration routes removed for security - data export/import no longer needed
 
 // Rate limiter for authentication endpoints to prevent brute force attacks
 const authLimiter = rateLimit({
@@ -924,6 +924,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error provisioning users:", error);
       res.status(500).json({ message: "Failed to provision user accounts" });
+    }
+  });
+
+  // Admin endpoint to reset a loan officer's password (generates a temporary password)
+  app.post("/api/admin/reset-password/:loanOfficerId", requireAuth, requireAdmin, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      const { loanOfficerId } = req.params;
+      
+      if (!loanOfficerId) {
+        return res.status(400).json({ message: "Loan Officer ID is required" });
+      }
+      
+      // Check if user exists
+      const existingUser = await storage.getUserByLoanOfficerId(organizationId, loanOfficerId);
+      if (!existingUser) {
+        return res.status(404).json({ message: "Loan officer not found" });
+      }
+      
+      // Generate a temporary password
+      const tempPassword = crypto.randomBytes(4).toString('hex'); // 8-character password
+      const hashedPassword = await import('bcrypt').then(bcrypt => bcrypt.hash(tempPassword, 10));
+      
+      // Update user with new password and mark as requiring password setup
+      await storage.updateUser(existingUser.id, {
+        password: hashedPassword,
+        requiresPasswordSetup: true
+      });
+      
+      console.log(`[ADMIN] Password reset for loan officer ${loanOfficerId} by admin ${req.session.user.loanOfficerId}`);
+      
+      res.json({
+        success: true,
+        loanOfficerId: loanOfficerId,
+        temporaryPassword: tempPassword,
+        message: "Password has been reset. Please share this temporary password securely with the loan officer."
+      });
+      
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
@@ -3741,40 +3785,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV === 'development') {
     console.log('[WEBSOCKET] Setting up WebSocket server for weight updates');
     
+    // Helper to extract session ID from signed cookie
+    const extractSessionId = (signedCookie: string): string | null => {
+      try {
+        // Cookie format: s%3A<sessionId>.<signature>
+        const decoded = decodeURIComponent(signedCookie);
+        if (decoded.startsWith('s:')) {
+          // Extract session ID (before the dot)
+          const sessionPart = decoded.substring(2);
+          const dotIndex = sessionPart.indexOf('.');
+          if (dotIndex > 0) {
+            return sessionPart.substring(0, dotIndex);
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    };
+
+    // Helper to get session from database
+    const getSessionFromDb = async (sessionId: string): Promise<any | null> => {
+      try {
+        const { db } = await import('./db.js');
+        const result = await db.execute(`SELECT sess FROM session WHERE sid = '${sessionId}'`);
+        if (result.rows && result.rows.length > 0) {
+          const sessData = result.rows[0] as { sess: any };
+          return typeof sessData.sess === 'string' ? JSON.parse(sessData.sess) : sessData.sess;
+        }
+        return null;
+      } catch (error) {
+        console.error('[WEBSOCKET] Error querying session:', error);
+        return null;
+      }
+    };
+
+    // Map WebSocket connections to their validated organization
+    const wsOrgMap = new WeakMap<any, string>();
+    
     // Setup WebSocket server on a different path to avoid conflicts
     const wss = new WebSocketServer({ 
       server: httpServer,
-      path: '/ws-admin'
+      path: '/ws-admin',
+      verifyClient: async (info, callback) => {
+        try {
+          // Parse cookies from the upgrade request
+          const cookies = info.req.headers.cookie;
+          if (!cookies) {
+            console.log('[WEBSOCKET] Connection rejected: No cookies present');
+            callback(false, 401, 'Authentication required');
+            return;
+          }
+          
+          // Look for connect.sid cookie (session cookie)
+          const sessionCookie = cookies.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('connect.sid='));
+          
+          if (!sessionCookie) {
+            console.log('[WEBSOCKET] Connection rejected: No session cookie');
+            callback(false, 401, 'Session required');
+            return;
+          }
+          
+          // Extract session ID from the signed cookie
+          const cookieValue = sessionCookie.split('=')[1];
+          const sessionId = extractSessionId(cookieValue);
+          
+          if (!sessionId) {
+            console.log('[WEBSOCKET] Connection rejected: Invalid session cookie format');
+            callback(false, 401, 'Invalid session');
+            return;
+          }
+          
+          // Look up session in database to validate and get organization
+          const session = await getSessionFromDb(sessionId);
+          
+          if (!session?.user?.organizationId) {
+            console.log('[WEBSOCKET] Connection rejected: No valid session found');
+            callback(false, 401, 'Session expired or invalid');
+            return;
+          }
+          
+          // Store validated organization ID for use in connection handler
+          // We attach it to the request object which is passed to the connection event
+          (info.req as any).validatedOrganizationId = session.user.organizationId;
+          (info.req as any).validatedLoanOfficerId = session.user.loanOfficerId;
+          
+          console.log(`[WEBSOCKET] Session validated for org ${session.user.organizationId}`);
+          callback(true);
+        } catch (error) {
+          console.error('[WEBSOCKET] Error verifying client:', error);
+          callback(false, 500, 'Internal error');
+        }
+      }
     });
     
     wss.on('connection', (ws, req) => {
-      console.log('[WEBSOCKET] New connection from loan officer');
+      // Get the validated organization from the session (NOT from query params)
+      const organizationId = (req as any).validatedOrganizationId;
+      const loanOfficerId = (req as any).validatedLoanOfficerId;
       
-      // Extract organizationId from query params or default to 'mfw' for backward compatibility
-      const url = new URL(req.url || '', `http://${req.headers.host}`);
-      const organizationId = url.searchParams.get('org') || 'mfw';
+      if (!organizationId) {
+        console.log('[WEBSOCKET] Connection rejected: No validated organization');
+        ws.close(1008, 'Invalid session');
+        return;
+      }
+      
+      console.log(`[WEBSOCKET] Authenticated connection for ${loanOfficerId} in org ${organizationId}`);
+      
+      // Store org in WeakMap for cleanup
+      wsOrgMap.set(ws, organizationId);
       
       // Add connection to organization-specific set
       if (!wsConnectionsByOrg.has(organizationId)) {
         wsConnectionsByOrg.set(organizationId, new Set());
       }
       wsConnectionsByOrg.get(organizationId)!.add(ws);
-      console.log(`[WEBSOCKET] Connection added to organization ${organizationId}`);
       
       ws.on('close', () => {
-        console.log('[WEBSOCKET] Loan officer disconnected');
-        const orgSet = wsConnectionsByOrg.get(organizationId);
+        console.log('[WEBSOCKET] Connection closed');
+        const org = wsOrgMap.get(ws) || organizationId;
+        const orgSet = wsConnectionsByOrg.get(org);
         if (orgSet) {
           orgSet.delete(ws);
           if (orgSet.size === 0) {
-            wsConnectionsByOrg.delete(organizationId);
+            wsConnectionsByOrg.delete(org);
           }
         }
       });
       
       ws.on('error', (error) => {
         console.error('[WEBSOCKET] Connection error:', error);
-        const orgSet = wsConnectionsByOrg.get(organizationId);
+        const org = wsOrgMap.get(ws) || organizationId;
+        const orgSet = wsConnectionsByOrg.get(org);
         if (orgSet) {
           orgSet.delete(ws);
         }
@@ -4111,10 +4255,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
-
-  // Register one-time migration routes for data export/import
-  // WARNING: These should be removed after migration is complete for security
-  registerMigrationRoutes(app);
 
   return httpServer;
 }

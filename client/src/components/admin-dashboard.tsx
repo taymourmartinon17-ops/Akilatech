@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Users, AlertTriangle, CheckCircle, Calendar, TrendingUp, Search, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { User, Users, AlertTriangle, CheckCircle, Calendar, TrendingUp, Search, Eye, KeyRound, Copy, Check } from "lucide-react";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoanOfficerStats {
   loanOfficerId: string;
@@ -161,10 +164,50 @@ function OfficerDetailView({ officerId, onBack }: {
   officerId: string; 
   onBack: () => void;
 }) {
+  const { toast } = useToast();
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const { data: details, isLoading, error } = useQuery<LoanOfficerDetails>({
     queryKey: ['/api/admin/officers', officerId],
     enabled: !!officerId,
   });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (loanOfficerId: string) => {
+      const response = await apiRequest('POST', `/api/admin/reset-password/${loanOfficerId}`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setTempPassword(data.temporaryPassword);
+      toast({
+        title: "Password Reset Successfully",
+        description: "A temporary password has been generated. Please share it securely with the loan officer.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Password Reset Failed",
+        description: error instanceof Error ? error.message : "Failed to reset password",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCopyPassword = () => {
+    if (tempPassword) {
+      navigator.clipboard.writeText(tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCloseResetDialog = () => {
+    setShowResetDialog(false);
+    setTempPassword(null);
+    setCopied(false);
+  };
 
   if (isLoading) {
     return (
@@ -217,11 +260,79 @@ function OfficerDetailView({ officerId, onBack }: {
             </p>
           </div>
         </div>
-        <Link to={`/dashboard/officer/${details.loanOfficerId}`}>
-          <Button data-testid="button-view-clients">
-            View All Clients
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-reset-password">
+                <KeyRound className="h-4 w-4 me-2" />
+                Reset Password
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogDescription>
+                  {tempPassword ? (
+                    "Password has been reset. Share this temporary password securely with the loan officer."
+                  ) : (
+                    `Are you sure you want to reset the password for ${details.name || details.loanOfficerId}? They will need to use the temporary password to log in.`
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              
+              {tempPassword ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <code className="flex-1 text-lg font-mono font-bold text-center" data-testid="text-temp-password">
+                      {tempPassword}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyPassword}
+                      data-testid="button-copy-password"
+                    >
+                      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      This password will only be shown once. Make sure to copy it before closing this dialog.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : null}
+              
+              <DialogFooter>
+                {tempPassword ? (
+                  <Button onClick={handleCloseResetDialog} data-testid="button-close-reset-dialog">
+                    Done
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={() => setShowResetDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => resetPasswordMutation.mutate(officerId)}
+                      disabled={resetPasswordMutation.isPending}
+                      data-testid="button-confirm-reset"
+                    >
+                      {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                    </Button>
+                  </>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          <Link to={`/dashboard/officer/${details.loanOfficerId}`}>
+            <Button data-testid="button-view-clients">
+              View All Clients
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Statistics Cards */}

@@ -10,7 +10,7 @@ import webSocketManager from '@/lib/websocket-client';
  * Hook for client-side calculation and automatic recalculation
  * Replaces server-side processing with local computation
  */
-export function useClientCalculation(loanOfficerId: string) {
+export function useClientCalculation(loanOfficerId: string, organizationId?: string) {
   const { toast } = useToast();
   const [isRecalculating, setIsRecalculating] = useState(false);
 
@@ -130,6 +130,10 @@ export function useClientCalculation(loanOfficerId: string) {
   useEffect(() => {
     // Connect to WebSocket for real-time weight updates from admin
     if (loanOfficerId && loanOfficerId !== 'ADMIN') {
+      // Set organization ID for proper multi-tenant isolation
+      if (organizationId) {
+        webSocketManager.setOrganizationId(organizationId);
+      }
       webSocketManager.connect();
     }
 
