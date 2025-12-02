@@ -435,3 +435,49 @@ html {
   left: auto;
   right: 0;
 }
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  /* Safe area padding for devices with notches */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Bottom padding for main content to account for fixed bottom navigation */
+  .mobile-content-padding {
+    padding-bottom: 80px;
+  }
+  
+  /* Ensure fixed elements respect safe areas */
+  .fixed-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Larger touch targets for mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Mobile card style for client list */
+  .mobile-card {
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  
+  /* Collapsible filter button style */
+  .mobile-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+}

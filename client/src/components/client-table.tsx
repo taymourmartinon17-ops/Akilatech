@@ -9,8 +9,10 @@ import { ScoreExplanationModal } from "./score-explanation-modal";
 import { ClientDetailModal } from "./client-detail-modal";
 import { useAuth } from "@/lib/auth";
 import type { Client } from "@shared/schema";
-import { Users, AlertTriangle, TrendingUp, DollarSign, Activity, CheckCircle2, Search, Filter, X, Clock, Star, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { motion } from "framer-motion";
+import { Users, AlertTriangle, TrendingUp, DollarSign, Activity, CheckCircle2, Search, Filter, X, Clock, Star, Sparkles, ChevronDown, ChevronUp, Phone, MapPin, MoreVertical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface ClientTableProps {
   clients: Client[];
@@ -21,6 +23,7 @@ interface ClientTableProps {
 export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate }: ClientTableProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
@@ -37,6 +40,7 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
   const [showClientDetailModal, setShowClientDetailModal] = useState(false);
   const [detailModalClient, setDetailModalClient] = useState<Client | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // Calculate urgency classification from current score (not stored value)
   const getUrgencyClassificationFromScore = (urgencyScore: number): string => {
@@ -267,10 +271,308 @@ export function ClientTable({ clients, onClientUpdate, onSingleClientRecalculate
     avgOutstanding: filteredAndSortedClients.length > 0 ? (filteredAndSortedClients.reduce((sum, c) => sum + c.outstanding, 0) / filteredAndSortedClients.length).toFixed(0) : "0",
   };
 
+  const renderMobileClientCard = (client: Client, index: number) => {
+    const currentUrgencyClassification = getUrgencyClassificationFromScore(client.compositeUrgency || 0);
+    return (
+      <motion.div
+        key={client.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.05 }}
+        className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+        data-testid={`mobile-card-client-${client.clientId}`}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-white">
+                {client.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <button
+                onClick={() => handleShowClientDetail(client)}
+                className="text-base font-semibold text-foreground hover:text-primary truncate block max-w-full text-start"
+              >
+                {client.name}
+              </button>
+              <p className="text-sm text-muted-foreground">ID: {client.clientId}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleShowClientDetail(client)}>
+                <Users className="h-4 w-4 me-2" />
+                {t('client.viewDetails')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShowScoreExplanation(client, 'risk')}>
+                <TrendingUp className="h-4 w-4 me-2" />
+                {t('client.riskBreakdown')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleShowScoreExplanation(client, 'urgency')}>
+                <AlertTriangle className="h-4 w-4 me-2" />
+                {t('client.urgencyBreakdown')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdateVisit(client)}>
+                <CheckCircle2 className="h-4 w-4 me-2" />
+                {t('client.recordVisit')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div 
+            className="bg-muted/50 rounded-lg p-3 cursor-pointer hover:bg-muted transition-colors"
+            onClick={() => handleShowScoreExplanation(client, 'risk')}
+          >
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+              <TrendingUp className="h-3.5 w-3.5" />
+              {t('client.riskScore')}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">{client.riskScore.toFixed(0)}</span>
+              <div className="flex-1 bg-muted rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full ${getRiskColor(client.riskScore)}`}
+                  style={{ width: `${Math.min(client.riskScore, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div 
+            className="bg-muted/50 rounded-lg p-3 cursor-pointer hover:bg-muted transition-colors"
+            onClick={() => handleShowScoreExplanation(client, 'urgency')}
+          >
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {t('dashboard.urgency')}
+            </div>
+            <Badge className={`${getUrgencyColor(currentUrgencyClassification)} text-xs`}>
+              {translateUrgency(currentUrgencyClassification)}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-sm">
+          <div className="text-center">
+            <p className="text-muted-foreground text-xs">{t('client.outstanding')}</p>
+            <p className="font-semibold">{client.outstanding.toLocaleString()} JOD</p>
+          </div>
+          <div className="text-center">
+            <p className="text-muted-foreground text-xs">{t('client.lastVisit')}</p>
+            <p className="font-semibold">{formatLastVisit(client.lastVisitDate)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-muted-foreground text-xs">{t('dashboard.feedback')}</p>
+            <div className="flex items-center justify-center gap-1">
+              <Star className={`h-4 w-4 ${client.feedbackScore ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+              <span className="font-semibold">{client.feedbackScore || '-'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-4 pt-3 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-11"
+            onClick={() => handleUpdateVisit(client)}
+          >
+            <CheckCircle2 className="h-4 w-4 me-2" />
+            {t('client.recordVisit')}
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex-1 h-11"
+            onClick={() => handleShowClientDetail(client)}
+          >
+            <Users className="h-4 w-4 me-2" />
+            {t('client.viewDetails')}
+          </Button>
+        </div>
+      </motion.div>
+    );
+  };
+
+  const renderMobileFilters = () => (
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          type="text"
+          placeholder={t('dashboard.searchPlaceholder')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="ps-10 h-12"
+          data-testid="input-mobile-search"
+        />
+      </div>
+      
+      <Button
+        variant="outline"
+        className="w-full h-12 justify-between"
+        onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+      >
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          {t('dashboard.filters')}
+        </div>
+        {mobileFiltersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </Button>
+      
+      <AnimatePresence>
+        {mobileFiltersOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 pt-2">
+              <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder={t('dashboard.allUrgencyLevels')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('dashboard.allUrgencyLevels')}</SelectItem>
+                  <SelectItem value="Extremely Urgent">{t('urgency.extremelyUrgent')}</SelectItem>
+                  <SelectItem value="Urgent">{t('urgency.urgent')}</SelectItem>
+                  <SelectItem value="Moderately Urgent">{t('urgency.moderatelyUrgent')}</SelectItem>
+                  <SelectItem value="Low Urgency">{t('urgency.lowUrgency')}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={riskFilter} onValueChange={setRiskFilter}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder={t('dashboard.allRiskLevels')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('dashboard.allRiskLevels')}</SelectItem>
+                  <SelectItem value="low">{t('dashboard.lowRiskLabel')}</SelectItem>
+                  <SelectItem value="medium">{t('dashboard.mediumRiskLabel')}</SelectItem>
+                  <SelectItem value="high">{t('dashboard.highRiskLabel')}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-11"
+                  onClick={() => { setUrgencyFilter("Extremely Urgent"); setMobileFiltersOpen(false); }}
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 me-1.5" />
+                  {t('urgency.extremelyUrgent')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-11"
+                  onClick={() => { setRiskFilter("high"); setMobileFiltersOpen(false); }}
+                >
+                  <TrendingUp className="h-3.5 w-3.5 me-1.5" />
+                  {t('dashboard.highRiskClients')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-11"
+                  onClick={() => { 
+                    setSearchTerm(""); 
+                    setUrgencyFilter("all"); 
+                    setRiskFilter("all"); 
+                    setOutstandingFilter("all");
+                    setVisitFilter("all");
+                    setFeedbackFilter("all");
+                  }}
+                >
+                  <X className="h-3.5 w-3.5 me-1.5" />
+                  {t('dashboard.clearAllFilters')}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4 pb-20" data-testid="client-table-mobile">
+        <div className="bg-indigo-600 rounded-xl px-4 py-3">
+          <h2 className="text-lg font-bold text-white">{t('dashboard.clientRiskAssessment')}</h2>
+          <p className="text-indigo-100 text-sm">{t('dashboard.showingClients', { filtered: filteredAndSortedClients.length, total: clients.length })}</p>
+        </div>
+        
+        {renderMobileFilters()}
+        
+        <div className="space-y-3">
+          {filteredAndSortedClients.length > 0 ? (
+            filteredAndSortedClients.map((client, index) => renderMobileClientCard(client, index))
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>{t('dashboard.noClientsMatch')}</p>
+            </div>
+          )}
+        </div>
+        
+        {selectedClient && (
+          <FeedbackModal
+            client={selectedClient}
+            isOpen={showFeedbackModal}
+            onClose={() => {
+              setShowFeedbackModal(false);
+              setSelectedClient(null);
+            }}
+            onUpdate={async () => {
+              onClientUpdate();
+              if (onSingleClientRecalculate && selectedClient) {
+                await onSingleClientRecalculate(selectedClient.id, {});
+              }
+            }}
+          />
+        )}
+        
+        {scoreModalClient && scoreType && (
+          <ScoreExplanationModal
+            client={scoreModalClient}
+            scoreType={scoreType}
+            isOpen={showScoreModal}
+            onClose={() => {
+              setShowScoreModal(false);
+              setScoreModalClient(null);
+              setScoreType(null);
+            }}
+          />
+        )}
+        
+        {detailModalClient && (
+          <ClientDetailModal
+            client={detailModalClient}
+            isOpen={showClientDetailModal}
+            onClose={() => {
+              setShowClientDetailModal(false);
+              setDetailModalClient(null);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" data-testid="client-table-container">
       {/* Client Risk Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden" data-testid="clients-table">
+      <div className="bg-white dark:bg-card rounded-xl border border-gray-200 dark:border-border shadow-lg overflow-hidden" data-testid="clients-table">
         <div className="bg-indigo-600 px-6 py-4">
           <h2 className="text-xl font-bold text-white">{t('dashboard.clientRiskAssessment')}</h2>
           <p className="text-indigo-100 text-sm mt-1">{t('dashboard.showingClients', { filtered: filteredAndSortedClients.length, total: clients.length })}</p>
