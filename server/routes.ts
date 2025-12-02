@@ -3804,15 +3804,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     };
 
-    // Helper to get session from database
+    // Helper to get session from database using parameterized query
     const getSessionFromDb = async (sessionId: string): Promise<any | null> => {
       try {
         const { db } = await import('./db.js');
-        const result = await db.execute(`SELECT sess FROM session WHERE sid = '${sessionId}'`);
+        const { sql } = await import('drizzle-orm');
+        const result = await db.execute(sql`SELECT sess FROM session WHERE sid = ${sessionId}`);
         if (result.rows && result.rows.length > 0) {
           const sessData = result.rows[0] as { sess: any };
           return typeof sessData.sess === 'string' ? JSON.parse(sessData.sess) : sessData.sess;
         }
+        console.log(`[WEBSOCKET] No session found for ID: ${sessionId.substring(0, 8)}...`);
         return null;
       } catch (error) {
         console.error('[WEBSOCKET] Error querying session:', error);
@@ -3859,11 +3861,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Look up session in database to validate and get organization
-          const session = await getSessionFromDb(sessionId);
+          // Wrap in try/catch to ensure DB errors result in rejection
+          let session: any = null;
+          try {
+            session = await getSessionFromDb(sessionId);
+          } catch (dbError) {
+            console.error('[WEBSOCKET] Database error during session lookup:', dbError);
+            callback(false, 500, 'Database error');
+            return;
+          }
           
-          if (!session?.user?.organizationId) {
-            console.log('[WEBSOCKET] Connection rejected: No valid session found');
-            callback(false, 401, 'Session expired or invalid');
+          // Explicitly check for null/undefined session
+          if (session === null || session === undefined) {
+            console.log('[WEBSOCKET] Connection rejected: Session not found in database');
+            callback(false, 401, 'Session not found');
+            return;
+          }
+          
+          // Validate session has required user data
+          if (!session.user || !session.user.organizationId) {
+            console.log('[WEBSOCKET] Connection rejected: Session missing user or organizationId');
+            callback(false, 401, 'Invalid session data');
             return;
           }
           
@@ -3875,7 +3893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[WEBSOCKET] Session validated for org ${session.user.organizationId}`);
           callback(true);
         } catch (error) {
-          console.error('[WEBSOCKET] Error verifying client:', error);
+          console.error('[WEBSOCKET] Unexpected error verifying client:', error);
           callback(false, 500, 'Internal error');
         }
       }

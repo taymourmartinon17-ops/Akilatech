@@ -61,7 +61,7 @@ export default function ClientList() {
     isRecalculating,
     recalculateSingleClient,
     refetchClients: refetch 
-  } = useClientCalculation(targetOfficerId, user?.organizationId);
+  } = useClientCalculation(targetOfficerId);
 
   const clients = clientsRaw.map((client, index) => {
     if (index < 3 && client.riskScore > 50) {

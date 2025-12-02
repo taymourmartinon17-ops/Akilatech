@@ -41,11 +41,6 @@ class WebSocketManager {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // Start with 1 second
   private isConnecting = false;
-  private organizationId: string = 'mfw';
-
-  setOrganizationId(orgId: string) {
-    this.organizationId = orgId;
-  }
 
   connect() {
     if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
@@ -57,7 +52,8 @@ class WebSocketManager {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws-admin?org=${encodeURIComponent(this.organizationId)}`;
+      // Organization is determined server-side from the session cookie, not from client params
+      const wsUrl = `${protocol}//${host}/ws-admin`;
       
       this.ws = new WebSocket(wsUrl);
 
