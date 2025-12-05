@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Clock, AlertTriangle, DollarSign, Calendar, BarChart3, MessageSquare } from "lucide-react";
+import { TrendingUp, Clock, AlertTriangle, DollarSign, Calendar, BarChart3, MessageSquare, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Client } from "@shared/schema";
 
 interface ScoreExplanationModalProps {
@@ -16,95 +14,27 @@ interface ScoreExplanationModalProps {
   scoreType: 'risk' | 'urgency' | null;
 }
 
+interface RiskReason {
+  icon: JSX.Element;
+  title: string;
+  reason: string;
+  severity: 'high' | 'medium' | 'low' | 'good';
+  value: number;
+}
+
+interface UrgencyReason {
+  icon: JSX.Element;
+  title: string;
+  reason: string;
+  severity: 'high' | 'medium' | 'low' | 'good';
+}
+
 export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: ScoreExplanationModalProps) {
   const { t } = useTranslation();
-  // Get the loan officer ID consistently with how other pages do it
-  const storedUser = localStorage.getItem('user');
-  const loanOfficerId = storedUser ? JSON.parse(storedUser).loanOfficerId : 'LO-12345';
-  
-  // Fetch global settings for dynamic weights (same for all loan officers)
-  const { data: settings, isLoading } = useQuery<any>({
-    queryKey: ['/api/settings'],
-    enabled: isOpen,
-  });
 
   if (!client) return null;
 
-  // Use dynamic weights from settings or fallback to defaults
-  const riskWeights = {
-    lateDays: settings?.riskLateDaysWeight || 25,
-    outstandingAtRisk: settings?.riskOutstandingAtRiskWeight || 20,
-    parPerLoan: settings?.riskParPerLoanWeight || 20,
-    reschedules: settings?.riskReschedulesWeight || 15,
-    paymentConsistency: settings?.riskPaymentConsistencyWeight || 10,
-    delayedInstalments: settings?.riskDelayedInstalmentsWeight || 10
-  };
-
-  const urgencyWeights = {
-    riskScore: settings?.urgencyRiskScoreWeight || 25,
-    daysSinceVisit: settings?.urgencyDaysSinceVisitWeight || 50,
-    feedbackScore: settings?.urgencyFeedbackScoreWeight || 25
-  };
-
-  // Calculate risk score components based on dynamic weights
-  const riskComponents = {
-    lateDays: {
-      value: client.lateDays,
-      maxThreshold: 90,
-      weight: riskWeights.lateDays,
-      score: Math.min((client.lateDays / 90) * riskWeights.lateDays, riskWeights.lateDays),
-      label: t('scoreExplanation.lateDaysLabel'),
-      description: t('scoreExplanation.lateDaysDesc'),
-      icon: <Clock className="w-4 h-4" />
-    },
-    outstandingAtRisk: {
-      value: client.outstandingAtRisk,
-      maxThreshold: 10000,
-      weight: riskWeights.outstandingAtRisk,
-      score: Math.min((client.outstandingAtRisk / 10000) * riskWeights.outstandingAtRisk, riskWeights.outstandingAtRisk),
-      label: t('scoreExplanation.outstandingAtRiskLabel'),
-      description: t('scoreExplanation.outstandingAtRiskDesc'),
-      icon: <AlertTriangle className="w-4 h-4" />
-    },
-    parPerLoan: {
-      value: client.parPerLoan,
-      maxThreshold: 1.0,
-      weight: riskWeights.parPerLoan,
-      score: Math.min((client.parPerLoan / 1.0) * riskWeights.parPerLoan, riskWeights.parPerLoan),
-      label: t('scoreExplanation.parPerLoanLabel'),
-      description: t('scoreExplanation.parPerLoanDesc'),
-      icon: <DollarSign className="w-4 h-4" />
-    },
-    reschedules: {
-      value: client.countReschedule,
-      maxThreshold: 5,
-      weight: riskWeights.reschedules,
-      score: Math.min((client.countReschedule / 5) * riskWeights.reschedules, riskWeights.reschedules),
-      label: t('scoreExplanation.reschedulesLabel'),
-      description: t('scoreExplanation.reschedulesDesc'),
-      icon: <Calendar className="w-4 h-4" />
-    },
-    paymentConsistency: {
-      value: client.paidInstalments,
-      maxThreshold: 50,
-      weight: riskWeights.paymentConsistency,
-      score: Math.max(0, Math.min(((50 - client.paidInstalments) / 50) * riskWeights.paymentConsistency, riskWeights.paymentConsistency)),
-      label: t('scoreExplanation.paymentConsistencyLabel'),
-      description: t('scoreExplanation.paymentConsistencyDesc'),
-      icon: <BarChart3 className="w-4 h-4" />
-    },
-    delayedInstalments: {
-      value: client.totalDelayedInstalments,
-      maxThreshold: 20,
-      weight: riskWeights.delayedInstalments,
-      score: Math.min((client.totalDelayedInstalments / 20) * riskWeights.delayedInstalments, riskWeights.delayedInstalments),
-      label: t('scoreExplanation.delayedInstalmentsLabel'),
-      description: t('scoreExplanation.delayedInstalmentsDesc'),
-      icon: <TrendingUp className="w-4 h-4" />
-    }
-  };
-
-  // Calculate days since most recent interaction (visits OR phone calls)
+  // Calculate days since most recent interaction
   const daysSinceLastInteraction = (() => {
     const dates = [];
     if (client.lastVisitDate) dates.push(new Date(client.lastVisitDate));
@@ -114,80 +44,292 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
       const mostRecent = new Date(Math.max(...dates.map(d => d.getTime())));
       return Math.max(0, Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24)));
     }
-    return 30; // Default for new clients
+    return 30;
   })();
 
-  // Normalize weights to sum to 1.0 (exactly matching ML service)
-  const totalWeight = urgencyWeights.riskScore + urgencyWeights.daysSinceVisit + urgencyWeights.feedbackScore;
-  const normalizedWeights = {
-    risk: urgencyWeights.riskScore / totalWeight,
-    days: urgencyWeights.daysSinceVisit / totalWeight,
-    feedback: urgencyWeights.feedbackScore / totalWeight
+  // Generate simple risk reasons based on client data
+  const getRiskReasons = (): RiskReason[] => {
+    const reasons: RiskReason[] = [];
+
+    // Late Days
+    if (client.lateDays > 60) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysHigh', { days: client.lateDays }),
+        severity: 'high',
+        value: client.lateDays
+      });
+    } else if (client.lateDays > 30) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysMedium', { days: client.lateDays }),
+        severity: 'medium',
+        value: client.lateDays
+      });
+    } else if (client.lateDays > 0) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysLow', { days: client.lateDays }),
+        severity: 'low',
+        value: client.lateDays
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysGood'),
+        severity: 'good',
+        value: 0
+      });
+    }
+
+    // Outstanding at Risk
+    if (client.outstandingAtRisk > 5000) {
+      reasons.push({
+        icon: <AlertTriangle className="w-5 h-5" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingHigh', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'high',
+        value: client.outstandingAtRisk
+      });
+    } else if (client.outstandingAtRisk > 2000) {
+      reasons.push({
+        icon: <AlertTriangle className="w-5 h-5" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingMedium', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'medium',
+        value: client.outstandingAtRisk
+      });
+    } else if (client.outstandingAtRisk > 0) {
+      reasons.push({
+        icon: <DollarSign className="w-5 h-5" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingLow', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'low',
+        value: client.outstandingAtRisk
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingGood'),
+        severity: 'good',
+        value: 0
+      });
+    }
+
+    // Reschedules
+    if (client.countReschedule >= 3) {
+      reasons.push({
+        icon: <Calendar className="w-5 h-5" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesHigh', { count: client.countReschedule }),
+        severity: 'high',
+        value: client.countReschedule
+      });
+    } else if (client.countReschedule >= 2) {
+      reasons.push({
+        icon: <Calendar className="w-5 h-5" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesMedium', { count: client.countReschedule }),
+        severity: 'medium',
+        value: client.countReschedule
+      });
+    } else if (client.countReschedule === 1) {
+      reasons.push({
+        icon: <Calendar className="w-5 h-5" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesLow'),
+        severity: 'low',
+        value: 1
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesGood'),
+        severity: 'good',
+        value: 0
+      });
+    }
+
+    // Delayed Instalments
+    if (client.totalDelayedInstalments > 10) {
+      reasons.push({
+        icon: <TrendingUp className="w-5 h-5" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedHigh', { count: client.totalDelayedInstalments }),
+        severity: 'high',
+        value: client.totalDelayedInstalments
+      });
+    } else if (client.totalDelayedInstalments > 5) {
+      reasons.push({
+        icon: <TrendingUp className="w-5 h-5" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedMedium', { count: client.totalDelayedInstalments }),
+        severity: 'medium',
+        value: client.totalDelayedInstalments
+      });
+    } else if (client.totalDelayedInstalments > 0) {
+      reasons.push({
+        icon: <TrendingUp className="w-5 h-5" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedLow', { count: client.totalDelayedInstalments }),
+        severity: 'low',
+        value: client.totalDelayedInstalments
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedGood'),
+        severity: 'good',
+        value: 0
+      });
+    }
+
+    // Payment Consistency
+    if (client.paidInstalments >= 30) {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.paymentHistory'),
+        reason: t('scoreReasons.paymentHistoryGood', { count: client.paidInstalments }),
+        severity: 'good',
+        value: client.paidInstalments
+      });
+    } else if (client.paidInstalments >= 10) {
+      reasons.push({
+        icon: <BarChart3 className="w-5 h-5" />,
+        title: t('scoreReasons.paymentHistory'),
+        reason: t('scoreReasons.paymentHistoryMedium', { count: client.paidInstalments }),
+        severity: 'low',
+        value: client.paidInstalments
+      });
+    } else {
+      reasons.push({
+        icon: <AlertCircle className="w-5 h-5" />,
+        title: t('scoreReasons.paymentHistory'),
+        reason: t('scoreReasons.paymentHistoryLow', { count: client.paidInstalments }),
+        severity: 'medium',
+        value: client.paidInstalments
+      });
+    }
+
+    // Sort by severity (high first, good last)
+    const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+    return reasons.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
   };
 
-  // Scale each component to 0-100 where 100 = most urgent (exactly matching ML service)
-  const riskUrgency = Math.min(Math.max(client.riskScore, 0), 100);
-  const daysUrgency = Math.min(Math.max((daysSinceLastInteraction / 180.0) * 100, 0), 100);
-  const feedbackUrgency = Math.max(0, Math.min(100, (5 - client.feedbackScore) * 25));
+  // Generate simple urgency reasons
+  const getUrgencyReasons = (): UrgencyReason[] => {
+    const reasons: UrgencyReason[] = [];
 
-  // Use backend-provided breakdown if available, otherwise calculate (fallback)
-  const urgencyComponents = client.urgencyBreakdown ? {
-    riskScore: {
-      ...client.urgencyBreakdown.riskScore,
-      label: t('scoreExplanation.riskScoreLabel'),
-      description: t('scoreExplanation.riskScoreDesc'),
-      icon: <TrendingUp className="w-4 h-4" />
-    },
-    daysSinceInteraction: {
-      ...client.urgencyBreakdown.daysSinceInteraction,
-      label: t('scoreExplanation.daysSinceContactLabel'),
-      description: t('scoreExplanation.daysSinceContactDesc'),
-      icon: <Clock className="w-4 h-4" />
-    },
-    feedbackScore: {
-      ...client.urgencyBreakdown.feedbackScore,
-      label: t('scoreExplanation.previousFeedbackLabel'),
-      description: t('scoreExplanation.previousFeedbackDesc'),
-      icon: <MessageSquare className="w-4 h-4" />
+    // Risk Score Impact
+    if (client.riskScore >= 70) {
+      reasons.push({
+        icon: <AlertTriangle className="w-5 h-5" />,
+        title: t('scoreReasons.riskLevel'),
+        reason: t('scoreReasons.riskLevelHigh'),
+        severity: 'high'
+      });
+    } else if (client.riskScore >= 50) {
+      reasons.push({
+        icon: <AlertTriangle className="w-5 h-5" />,
+        title: t('scoreReasons.riskLevel'),
+        reason: t('scoreReasons.riskLevelMedium'),
+        severity: 'medium'
+      });
+    } else if (client.riskScore >= 30) {
+      reasons.push({
+        icon: <AlertCircle className="w-5 h-5" />,
+        title: t('scoreReasons.riskLevel'),
+        reason: t('scoreReasons.riskLevelLow'),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.riskLevel'),
+        reason: t('scoreReasons.riskLevelGood'),
+        severity: 'good'
+      });
     }
-  } : {
-    // Fallback calculation if no backend breakdown available
-    riskScore: {
-      value: client.riskScore,
-      scaledValue: riskUrgency,
-      weight: urgencyWeights.riskScore,
-      normalizedWeight: normalizedWeights.risk * 100, // Show as percentage
-      contribution: riskUrgency * normalizedWeights.risk,
-      label: t('scoreExplanation.riskScoreLabel'),
-      description: t('scoreExplanation.riskScoreFallbackDesc'),
-      icon: <AlertTriangle className="w-4 h-4" />
-    },
-    daysSinceInteraction: {
-      value: daysSinceLastInteraction,
-      scaledValue: daysUrgency,
-      weight: urgencyWeights.daysSinceVisit,
-      normalizedWeight: normalizedWeights.days * 100, // Show as percentage
-      contribution: daysUrgency * normalizedWeights.days,
-      label: t('scoreExplanation.daysSinceInteractionLabel'),
-      description: t('scoreExplanation.daysSinceInteractionDesc'),
-      icon: <Clock className="w-4 h-4" />
-    },
-    feedbackScore: {
-      value: client.feedbackScore,
-      scaledValue: feedbackUrgency,
-      weight: urgencyWeights.feedbackScore,
-      normalizedWeight: normalizedWeights.feedback * 100, // Show as percentage
-      contribution: feedbackUrgency * normalizedWeights.feedback,
-      label: t('scoreExplanation.previousFeedbackLabel'),
-      description: t('scoreExplanation.previousFeedbackFallbackDesc'),
-      icon: <BarChart3 className="w-4 h-4" />
+
+    // Days Since Contact
+    if (daysSinceLastInteraction > 60) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.lastContact'),
+        reason: t('scoreReasons.contactVeryOld', { days: daysSinceLastInteraction }),
+        severity: 'high'
+      });
+    } else if (daysSinceLastInteraction > 30) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.lastContact'),
+        reason: t('scoreReasons.contactOld', { days: daysSinceLastInteraction }),
+        severity: 'medium'
+      });
+    } else if (daysSinceLastInteraction > 14) {
+      reasons.push({
+        icon: <Clock className="w-5 h-5" />,
+        title: t('scoreReasons.lastContact'),
+        reason: t('scoreReasons.contactModerate', { days: daysSinceLastInteraction }),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.lastContact'),
+        reason: t('scoreReasons.contactRecent', { days: daysSinceLastInteraction }),
+        severity: 'good'
+      });
     }
+
+    // Feedback Score
+    if (client.feedbackScore <= 2) {
+      reasons.push({
+        icon: <MessageSquare className="w-5 h-5" />,
+        title: t('scoreReasons.previousFeedback'),
+        reason: t('scoreReasons.feedbackPoor'),
+        severity: 'high'
+      });
+    } else if (client.feedbackScore <= 3) {
+      reasons.push({
+        icon: <MessageSquare className="w-5 h-5" />,
+        title: t('scoreReasons.previousFeedback'),
+        reason: t('scoreReasons.feedbackMixed'),
+        severity: 'medium'
+      });
+    } else if (client.feedbackScore <= 4) {
+      reasons.push({
+        icon: <MessageSquare className="w-5 h-5" />,
+        title: t('scoreReasons.previousFeedback'),
+        reason: t('scoreReasons.feedbackOkay'),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-5 h-5" />,
+        title: t('scoreReasons.previousFeedback'),
+        reason: t('scoreReasons.feedbackGood'),
+        severity: 'good'
+      });
+    }
+
+    // Sort by severity
+    const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+    return reasons.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
   };
 
-  // Calculate total weighted contribution 
-  const totalContribution = urgencyComponents.riskScore.contribution + 
-                           urgencyComponents.daysSinceInteraction.contribution + 
-                           urgencyComponents.feedbackScore.contribution;
+  const riskReasons = getRiskReasons();
+  const urgencyReasons = getUrgencyReasons();
+
+  // Calculate urgency score for display
+  const totalContribution = client.compositeUrgency || 0;
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-purple-600 dark:text-purple-400";
@@ -196,11 +338,42 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
     return "text-green-600 dark:text-green-400";
   };
 
-  const getProgressColor = (score: number) => {
-    if (score >= 70) return "bg-purple-500";
-    if (score >= 50) return "bg-indigo-500";
-    if (score >= 30) return "bg-blue-500";
-    return "bg-green-500";
+  const getSeverityStyles = (severity: 'high' | 'medium' | 'low' | 'good') => {
+    switch (severity) {
+      case 'high':
+        return {
+          bg: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+          icon: 'text-purple-600 dark:text-purple-400',
+          badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'
+        };
+      case 'medium':
+        return {
+          bg: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
+          icon: 'text-indigo-600 dark:text-indigo-400',
+          badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300'
+        };
+      case 'low':
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+          icon: 'text-blue-600 dark:text-blue-400',
+          badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+        };
+      case 'good':
+        return {
+          bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+          icon: 'text-green-600 dark:text-green-400',
+          badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+        };
+    }
+  };
+
+  const getSeverityLabel = (severity: 'high' | 'medium' | 'low' | 'good') => {
+    switch (severity) {
+      case 'high': return t('scoreReasons.concernHigh');
+      case 'medium': return t('scoreReasons.concernMedium');
+      case 'low': return t('scoreReasons.concernLow');
+      case 'good': return t('scoreReasons.concernGood');
+    }
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -218,12 +391,21 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
     }
   };
 
+  const getUrgencyClassification = (score: number) => {
+    if (score >= 60) return { text: t('scoreExplanation.extremelyUrgent'), key: "Extremely Urgent" };
+    if (score >= 40) return { text: t('scoreExplanation.urgent'), key: "Urgent" };
+    if (score >= 20) return { text: t('scoreExplanation.moderatelyUrgent'), key: "Moderately Urgent" };
+    return { text: t('scoreExplanation.lowUrgency'), key: "Low Urgency" };
+  };
+
+  const urgencyClass = getUrgencyClassification(totalContribution);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="score-explanation-modal">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="score-explanation-modal">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <span>{t('scoreExplanation.scoreAnalysisTitle', { name: client.name })}</span>
+          <DialogTitle className="flex items-center gap-2">
+            <span>{t('scoreReasons.analysisFor', { name: client.name })}</span>
             <Badge variant="outline" data-testid="client-id-badge">
               {client.clientId}
             </Badge>
@@ -232,17 +414,17 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
 
         <Tabs defaultValue={scoreType || 'risk'} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="risk" data-testid="tab-risk-score">{t('scoreExplanation.riskScoreAnalysisTab')}</TabsTrigger>
-            <TabsTrigger value="urgency" data-testid="tab-urgency-score">{t('scoreExplanation.urgencyScoreAnalysisTab')}</TabsTrigger>
+            <TabsTrigger value="risk" data-testid="tab-risk-score">{t('scoreReasons.riskTab')}</TabsTrigger>
+            <TabsTrigger value="urgency" data-testid="tab-urgency-score">{t('scoreReasons.urgencyTab')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="risk" className="space-y-6">
+          <TabsContent value="risk" className="space-y-4 mt-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span>{t('scoreExplanation.riskScoreBreakdown')}</span>
+                  <span>{t('scoreReasons.riskScoreTitle')}</span>
                   <span className={`text-3xl font-bold ${getScoreColor(client.riskScore)}`} data-testid="risk-score-display">
-                    {client.riskScore.toFixed(1)}
+                    {client.riskScore.toFixed(0)}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -250,80 +432,59 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
                 <div className="mb-6">
                   <Progress 
                     value={client.riskScore} 
-                    className="h-4"
+                    className="h-3"
                     data-testid="risk-score-progress"
                   />
                   <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                    <span>{t('scoreExplanation.lowRisk')}</span>
-                    <span>{t('scoreExplanation.highRisk')}</span>
+                    <span>{t('scoreReasons.lowRisk')}</span>
+                    <span>{t('scoreReasons.highRisk')}</span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground mb-3">{t('scoreExplanation.riskFactorsContributing')}</h4>
-                  
-                  {Object.entries(riskComponents).map(([key, component]) => (
-                    <div key={key} className="border border-border rounded-lg p-4" data-testid={`risk-component-${key}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {component.icon}
-                          <span className="font-medium">{component.label}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {t('scoreExplanation.weightPercentage', { weight: component.weight })}
-                          </Badge>
+                <h4 className="font-semibold text-foreground mb-4">{t('scoreReasons.mainReasons')}</h4>
+                
+                <div className="space-y-3">
+                  {riskReasons.map((reason, index) => {
+                    const styles = getSeverityStyles(reason.severity);
+                    return (
+                      <div 
+                        key={index} 
+                        className={`border rounded-lg p-4 ${styles.bg}`}
+                        data-testid={`risk-reason-${index}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 ${styles.icon}`}>
+                            {reason.icon}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-foreground">{reason.title}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${styles.badge}`}>
+                                {getSeverityLabel(reason.severity)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{reason.reason}</p>
+                          </div>
                         </div>
-                        <span className="font-bold text-sm" data-testid={`score-${key}`}>
-                          {component.score.toFixed(1)}/25
-                        </span>
                       </div>
-                      
-                      <div className="mb-2">
-                        <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                          <span>{t('scoreExplanation.currentValue', { value: component.value })}</span>
-                          <span>{t('scoreExplanation.threshold', { threshold: component.maxThreshold })}</span>
-                        </div>
-                        <Progress 
-                          value={(component.value / component.maxThreshold) * 100} 
-                          className="h-2"
-                          data-testid={`progress-${key}`}
-                        />
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground">{component.description}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                  <h5 className="font-semibold mb-2 flex items-center">
-                    <AlertTriangle className="w-4 h-4 me-2" />
-                    {t('scoreExplanation.howRiskScoreCalculated')}
-                  </h5>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {t('scoreExplanation.riskScoreExplanation')}
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ms-4">
-                    <li>• {t('scoreExplanation.riskFactorLateDays')}</li>
-                    <li>• {t('scoreExplanation.riskFactorOutstandingPAR')}</li>
-                    <li>• {t('scoreExplanation.riskFactorRescheduling')}</li>
-                    <li>• {t('scoreExplanation.riskFactorConsistency')}</li>
-                  </ul>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="urgency" className="space-y-6">
+          <TabsContent value="urgency" className="space-y-4 mt-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span>{t('scoreExplanation.urgencyScoreBreakdown')}</span>
-                  <div className="flex items-center space-x-2">
+                  <span>{t('scoreReasons.urgencyScoreTitle')}</span>
+                  <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold text-foreground" data-testid="urgency-score-display">
-                      {totalContribution.toFixed(1)}
+                      {totalContribution.toFixed(0)}
                     </span>
-                    <Badge variant={getUrgencyColor(totalContribution >= 60 ? "Extremely Urgent" : totalContribution >= 40 ? "Urgent" : totalContribution >= 20 ? "Moderately Urgent" : "Low Urgency")} data-testid="urgency-classification-badge">
-                      {totalContribution >= 60 ? t('scoreExplanation.extremelyUrgent') : totalContribution >= 40 ? t('scoreExplanation.urgent') : totalContribution >= 20 ? t('scoreExplanation.moderatelyUrgent') : t('scoreExplanation.lowUrgency')}
+                    <Badge variant={getUrgencyColor(urgencyClass.key)} data-testid="urgency-classification-badge">
+                      {urgencyClass.text}
                     </Badge>
                   </div>
                 </CardTitle>
@@ -332,77 +493,63 @@ export function ScoreExplanationModal({ isOpen, onClose, client, scoreType }: Sc
                 <div className="mb-6">
                   <Progress 
                     value={totalContribution} 
-                    className="h-4"
+                    className="h-3"
                     data-testid="urgency-score-progress"
                   />
                   <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                    <span>{t('scoreExplanation.lowUrgency')}</span>
-                    <span>{t('scoreExplanation.highUrgency')}</span>
+                    <span>{t('scoreReasons.lowPriority')}</span>
+                    <span>{t('scoreReasons.highPriority')}</span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground mb-3">{t('scoreExplanation.urgencyFactorsContributing')}</h4>
-                  
-                  {Object.entries(urgencyComponents).map(([key, component]) => (
-                    <div key={key} className="border border-border rounded-lg p-4" data-testid={`urgency-component-${key}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          {component.icon}
-                          <span className="font-medium">{component.label}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {t('scoreExplanation.weightPercentage', { weight: component.normalizedWeight.toFixed(1) })}
-                          </Badge>
+                <h4 className="font-semibold text-foreground mb-4">{t('scoreReasons.whyThisUrgency')}</h4>
+                
+                <div className="space-y-3">
+                  {urgencyReasons.map((reason, index) => {
+                    const styles = getSeverityStyles(reason.severity);
+                    return (
+                      <div 
+                        key={index} 
+                        className={`border rounded-lg p-4 ${styles.bg}`}
+                        data-testid={`urgency-reason-${index}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 ${styles.icon}`}>
+                            {reason.icon}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-foreground">{reason.title}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${styles.badge}`}>
+                                {getSeverityLabel(reason.severity)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{reason.reason}</p>
+                          </div>
                         </div>
-                        <span className="font-bold text-sm" data-testid={`urgency-contribution-${key}`}>
-                          {t('scoreExplanation.contributionFrom', { contribution: component.contribution.toFixed(1), scaled: component.scaledValue.toFixed(1) })}
-                        </span>
                       </div>
-                      
-                      <div className="mb-2">
-                        <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                          <span>{t('scoreExplanation.rawValueScaled', { raw: component.value, scaled: component.scaledValue.toFixed(1) })}</span>
-                          <span>{t('scoreExplanation.weightNormalized', { weight: component.normalizedWeight.toFixed(1) })}</span>
-                        </div>
-                        <Progress 
-                          value={component.scaledValue} 
-                          className="h-2"
-                          data-testid={`urgency-progress-${key}`}
-                        />
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground">{component.description}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                  <h5 className="font-semibold mb-2 flex items-center">
-                    <Clock className="w-4 h-4 me-2" />
-                    {t('scoreExplanation.howUrgencyScoreCalculated')}
-                  </h5>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {t('scoreExplanation.urgencyScoreExplanation')}
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ms-4">
-                    <li>• {t('scoreExplanation.urgencyFactorRiskScore')}</li>
-                    <li>• {t('scoreExplanation.urgencyFactorDays')}</li>
-                    <li>• {t('scoreExplanation.urgencyFactorFeedback')}</li>
-                    <li className="text-xs italic mt-2">{t('scoreExplanation.weightsNormalized')}</li>
-                  </ul>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded">
-                      <span className="font-medium text-purple-800 dark:text-purple-400">{t('scoreExplanation.extremelyUrgent')}:</span> {t('scoreExplanation.score60Plus')}
+                  <h5 className="font-semibold mb-3">{t('scoreReasons.urgencyLevels')}</h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="text-purple-800 dark:text-purple-300">{t('scoreExplanation.extremelyUrgent')}</span>
                     </div>
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded">
-                      <span className="font-medium text-indigo-800 dark:text-indigo-400">{t('scoreExplanation.urgent')}:</span> {t('scoreExplanation.score40to59')}
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-indigo-800 dark:text-indigo-300">{t('scoreExplanation.urgent')}</span>
                     </div>
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded">
-                      <span className="font-medium text-blue-800 dark:text-blue-400">{t('scoreExplanation.moderatelyUrgent')}:</span> {t('scoreExplanation.score20to39')}
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-blue-800 dark:text-blue-300">{t('scoreExplanation.moderatelyUrgent')}</span>
                     </div>
-                    <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded">
-                      <span className="font-medium text-green-800 dark:text-green-400">{t('scoreExplanation.lowUrgency')}:</span> {t('scoreExplanation.scoreUnder20')}
+                    <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <span className="text-green-800 dark:text-green-300">{t('scoreExplanation.lowUrgency')}</span>
                     </div>
                   </div>
                 </div>
