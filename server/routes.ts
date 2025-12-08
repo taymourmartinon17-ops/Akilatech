@@ -1067,6 +1067,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // DYNAMIC FEEDBACK-FIRST CONTACT METHOD - ONE CLEAR RECOMMENDATION
         // Use translation keys instead of hardcoded English text for i18n support
+        // Generate structured reason points for each suggestion
+        const reasonPoints: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[] = [];
+        
+        // Add feedback-based reason
+        if (feedbackScore >= 4) {
+          reasonPoints.push({ key: 'feedback_excellent', severity: 'good', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 3) {
+          reasonPoints.push({ key: 'feedback_good', severity: 'low', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 2) {
+          reasonPoints.push({ key: 'feedback_fair', severity: 'medium', params: { score: feedbackScore.toFixed(1) } });
+        } else {
+          reasonPoints.push({ key: 'feedback_poor', severity: 'high', params: { score: feedbackScore.toFixed(1) } });
+        }
+        
+        // Add risk-based reason
+        if (client.riskScore >= 70) {
+          reasonPoints.push({ key: 'risk_high', severity: 'high', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 50) {
+          reasonPoints.push({ key: 'risk_medium', severity: 'medium', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 30) {
+          reasonPoints.push({ key: 'risk_low', severity: 'low', params: { score: client.riskScore.toFixed(0) } });
+        } else {
+          reasonPoints.push({ key: 'risk_minimal', severity: 'good', params: { score: client.riskScore.toFixed(0) } });
+        }
+        
+        // Add late days reason
+        if (client.lateDays > 60) {
+          reasonPoints.push({ key: 'overdue_severe', severity: 'high', params: { days: client.lateDays } });
+        } else if (client.lateDays > 30) {
+          reasonPoints.push({ key: 'overdue_moderate', severity: 'medium', params: { days: client.lateDays } });
+        } else if (client.lateDays > 0) {
+          reasonPoints.push({ key: 'overdue_minor', severity: 'low', params: { days: client.lateDays } });
+        } else {
+          reasonPoints.push({ key: 'payment_current', severity: 'good' });
+        }
+        
+        // Add urgency-based reason
+        if (clientUrgency >= 80) {
+          reasonPoints.push({ key: 'urgency_critical', severity: 'high' });
+        } else if (clientUrgency >= 60) {
+          reasonPoints.push({ key: 'urgency_high', severity: 'medium' });
+        } else if (clientUrgency >= 40) {
+          reasonPoints.push({ key: 'urgency_moderate', severity: 'low' });
+        }
+        
+        // Sort by severity (high first)
+        const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+        reasonPoints.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+        
         if (feedbackScore >= callThreshold) {
           // High feedback: Phone call sufficient (threshold based on feedback weight)
           singleSuggestion = {
@@ -1076,7 +1125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             urgency: urgencyTiming,
             reasoningKey: 'call_high_feedback_reason',
             reasoning: 'call_high_feedback_reason',
-            params: { feedbackScore: feedbackScore.toFixed(1) }
+            params: { feedbackScore: feedbackScore.toFixed(1) },
+            reasonPoints
           };
         } else if (feedbackScore <= visitThreshold) {
           // Low feedback: Visit required (threshold based on feedback weight)
@@ -1087,7 +1137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             urgency: urgencyTiming,
             reasoningKey: 'visit_low_feedback_reason',
             reasoning: 'visit_low_feedback_reason',
-            params: { feedbackScore: feedbackScore.toFixed(1), lateDays: client.lateDays }
+            params: { feedbackScore: feedbackScore.toFixed(1), lateDays: client.lateDays },
+            reasonPoints
           };
         } else {
           // Medium feedback: Risk-based tiebreaker using dynamic risk threshold
@@ -1099,7 +1150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               urgency: urgencyTiming,
               reasoningKey: 'visit_high_risk_reason',
               reasoning: 'visit_high_risk_reason',
-              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays }
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+              reasonPoints
             };
           } else {
             singleSuggestion = {
@@ -1109,7 +1161,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               urgency: urgencyTiming,
               reasoningKey: 'call_moderate_risk_reason',
               reasoning: 'call_moderate_risk_reason',
-              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays }
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+              reasonPoints
             };
           }
         }

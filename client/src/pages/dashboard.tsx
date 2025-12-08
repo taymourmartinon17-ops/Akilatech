@@ -380,17 +380,52 @@ export default function Dashboard() {
                                   </Badge>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-foreground text-xs md:text-sm">
+                                  <p className="font-semibold text-foreground text-xs md:text-sm mb-2">
                                     {(suggestion as any).descriptionKey 
                                       ? t(`actions.suggestions.${(suggestion as any).descriptionKey}`, (suggestion as any).params || {})
                                       : suggestion.description}
                                   </p>
-                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 md:line-clamp-none">
-                                    {(suggestion as any).reasoningKey 
-                                      ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
-                                      : suggestion.reasoning}
-                                  </p>
-                                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
+                                  {/* Display reason points as cards */}
+                                  {(suggestion as any).reasonPoints && (suggestion as any).reasonPoints.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(suggestion as any).reasonPoints.slice(0, 3).map((point: any, pointIdx: number) => {
+                                        const getSeverityStyle = (severity: string) => {
+                                          switch (severity) {
+                                            case 'high': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700';
+                                            case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-700';
+                                            case 'low': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-700';
+                                            case 'good': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-700';
+                                            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 border-gray-200 dark:border-gray-700';
+                                          }
+                                        };
+                                        const getSeverityIcon = (severity: string) => {
+                                          switch (severity) {
+                                            case 'high': return 'fas fa-exclamation-circle';
+                                            case 'medium': return 'fas fa-exclamation-triangle';
+                                            case 'low': return 'fas fa-info-circle';
+                                            case 'good': return 'fas fa-check-circle';
+                                            default: return 'fas fa-circle';
+                                          }
+                                        };
+                                        return (
+                                          <span 
+                                            key={pointIdx}
+                                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border ${getSeverityStyle(point.severity)}`}
+                                          >
+                                            <i className={`${getSeverityIcon(point.severity)} text-[10px]`}></i>
+                                            {t(`actions.reasonPoints.${point.key}`, point.params || {})}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground line-clamp-2 md:line-clamp-none">
+                                      {(suggestion as any).reasoningKey 
+                                        ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
+                                        : suggestion.reasoning}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2 font-medium">
                                     <i className="fas fa-info-circle me-1"></i>
                                     {t('actions.viewReasoning')}
                                   </p>
@@ -515,13 +550,50 @@ export default function Dashboard() {
                     : selectedAction.suggestion.description}
                 </p>
               </div>
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <p className="text-sm">
-                  {selectedAction.suggestion.reasoningKey 
-                    ? t(`actions.suggestions.${selectedAction.suggestion.reasoningKey}`, selectedAction.suggestion.params || {})
-                    : selectedAction.suggestion.reasoning}
-                </p>
-              </div>
+              {/* Display reason points as structured cards */}
+              {selectedAction.suggestion.reasonPoints && selectedAction.suggestion.reasonPoints.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedAction.suggestion.reasonPoints.map((point: any, pointIdx: number) => {
+                    const getSeverityStyle = (severity: string) => {
+                      switch (severity) {
+                        case 'high': return 'border-l-purple-500 bg-purple-50 dark:bg-purple-950/20';
+                        case 'medium': return 'border-l-amber-500 bg-amber-50 dark:bg-amber-950/20';
+                        case 'low': return 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20';
+                        case 'good': return 'border-l-green-500 bg-green-50 dark:bg-green-950/20';
+                        default: return 'border-l-gray-500 bg-gray-50 dark:bg-gray-950/20';
+                      }
+                    };
+                    const getSeverityIcon = (severity: string) => {
+                      switch (severity) {
+                        case 'high': return 'fas fa-exclamation-circle text-purple-600 dark:text-purple-400';
+                        case 'medium': return 'fas fa-exclamation-triangle text-amber-600 dark:text-amber-400';
+                        case 'low': return 'fas fa-info-circle text-blue-600 dark:text-blue-400';
+                        case 'good': return 'fas fa-check-circle text-green-600 dark:text-green-400';
+                        default: return 'fas fa-circle text-gray-600 dark:text-gray-400';
+                      }
+                    };
+                    return (
+                      <div 
+                        key={pointIdx}
+                        className={`flex items-center gap-3 p-3 rounded-lg border-l-4 ${getSeverityStyle(point.severity)}`}
+                      >
+                        <i className={`${getSeverityIcon(point.severity)}`}></i>
+                        <span className="text-sm font-medium">
+                          {t(`actions.reasonPoints.${point.key}`, point.params || {})}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                  <p className="text-sm">
+                    {selectedAction.suggestion.reasoningKey 
+                      ? t(`actions.suggestions.${selectedAction.suggestion.reasoningKey}`, selectedAction.suggestion.params || {})
+                      : selectedAction.suggestion.reasoning}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

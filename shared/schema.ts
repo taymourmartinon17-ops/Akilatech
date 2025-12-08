@@ -82,6 +82,7 @@ export const clients = pgTable("clients", {
     reasoning: string;
     reasoningKey?: string;
     params?: { feedbackScore?: string; riskScore?: string; lateDays?: number };
+    reasonPoints?: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[];
   }[]>(),
   // Snooze functionality
   snoozedUntil: timestamp("snoozed_until"),

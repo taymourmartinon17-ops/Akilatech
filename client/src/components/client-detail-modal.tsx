@@ -578,6 +578,25 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
                     }
                   };
                   
+                  const getSeverityStyle = (severity: string) => {
+                    switch (severity) {
+                      case 'high': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+                      case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+                      case 'low': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+                      case 'good': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+                      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+                    }
+                  };
+                  const getSeverityIcon = (severity: string) => {
+                    switch (severity) {
+                      case 'high': return 'fas fa-exclamation-circle';
+                      case 'medium': return 'fas fa-exclamation-triangle';
+                      case 'low': return 'fas fa-info-circle';
+                      case 'good': return 'fas fa-check-circle';
+                      default: return 'fas fa-circle';
+                    }
+                  };
+                  
                   return (
                     <div key={index} className="bg-muted/30 rounded-lg p-4 border border-border">
                       <div className="flex items-start justify-between mb-2">
@@ -589,16 +608,31 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
                           {formatUrgency(suggestion.urgency)}
                         </Badge>
                       </div>
-                      <p className="text-sm font-medium mb-1">
+                      <p className="text-sm font-medium mb-3">
                         {(suggestion as any).descriptionKey 
                           ? t(`actions.suggestions.${(suggestion as any).descriptionKey}`, (suggestion as any).params || {})
                           : suggestion.description}
                       </p>
-                      <p className="text-xs text-muted-foreground italic">
-                        {(suggestion as any).reasoningKey 
-                          ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
-                          : suggestion.reasoning}
-                      </p>
+                      {/* Display reason points as cards */}
+                      {(suggestion as any).reasonPoints && (suggestion as any).reasonPoints.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {(suggestion as any).reasonPoints.map((point: any, pointIdx: number) => (
+                            <span 
+                              key={pointIdx}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${getSeverityStyle(point.severity)}`}
+                            >
+                              <i className={`${getSeverityIcon(point.severity)} text-[10px]`}></i>
+                              {t(`actions.reasonPoints.${point.key}`, point.params || {})}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          {(suggestion as any).reasoningKey 
+                            ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
+                            : suggestion.reasoning}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

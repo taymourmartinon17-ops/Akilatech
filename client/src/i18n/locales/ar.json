@@ -658,6 +658,23 @@
       "visit_high_risk_reason": "هذا العميل لديه تقييم متوسط ({{feedbackScore}}/5) لكن مستوى خطورته ({{riskScore}}) مرتفع مع تأخر {{lateDays}} يوماً. يوصى باجتماع شخصي.",
       "call_moderate_risk": "مكالمة هاتفية موصى بها - متابعة معتدلة مطلوبة",
       "call_moderate_risk_reason": "هذا العميل لديه تقييم متوسط ({{feedbackScore}}/5) مع مخاطر معتدلة ({{riskScore}}). ستعمل المكالمة الهاتفية جيداً لهذا الحساب المتأخر {{lateDays}} يوماً."
+    },
+    "reasonPoints": {
+      "feedback_excellent": "العميل يستجيب جيداً جداً للتواصل",
+      "feedback_good": "العميل لديه تاريخ تواصل جيد",
+      "feedback_fair": "العميل أحياناً يصعب الوصول إليه",
+      "feedback_poor": "العميل نادراً ما يستجيب لمحاولات الاتصال",
+      "risk_high": "مستوى مخاطر عالي يحتاج اهتمام",
+      "risk_medium": "مستوى مخاطر متوسط",
+      "risk_low": "مستوى مخاطر منخفض",
+      "risk_minimal": "مخاطر منخفضة جداً - الحساب في وضع جيد",
+      "overdue_severe": "الدفعة متأخرة {{days}} يوماً",
+      "overdue_moderate": "الدفعة متأخرة {{days}} يوماً",
+      "overdue_minor": "الدفعة متأخرة {{days}} يوماً",
+      "payment_current": "المدفوعات محدثة",
+      "urgency_critical": "يتطلب إجراء فوري",
+      "urgency_high": "يجب معالجته خلال 3 أيام",
+      "urgency_moderate": "يمكن معالجته هذا الأسبوع"
     }
   },
   "incentives": {

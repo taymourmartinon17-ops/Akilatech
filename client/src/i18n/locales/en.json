@@ -658,6 +658,23 @@
       "visit_high_risk_reason": "This client has a medium feedback score ({{feedbackScore}}/5) but their risk level ({{riskScore}}) is elevated with {{lateDays}} days overdue. An in-person meeting is recommended.",
       "call_moderate_risk": "Phone call recommended - moderate follow-up needed",
       "call_moderate_risk_reason": "This client has a medium feedback score ({{feedbackScore}}/5) with moderate risk ({{riskScore}}). A phone call should work well for this {{lateDays}}-day overdue account."
+    },
+    "reasonPoints": {
+      "feedback_excellent": "Client responds very well to communication",
+      "feedback_good": "Client has good communication history",
+      "feedback_fair": "Client sometimes difficult to reach",
+      "feedback_poor": "Client rarely responds to contact attempts",
+      "risk_high": "High risk level needs attention",
+      "risk_medium": "Moderate risk level",
+      "risk_low": "Low risk level",
+      "risk_minimal": "Very low risk - account in good standing",
+      "overdue_severe": "Payment is {{days}} days overdue",
+      "overdue_moderate": "Payment is {{days}} days late",
+      "overdue_minor": "Payment is {{days}} days behind",
+      "payment_current": "Payments are up to date",
+      "urgency_critical": "Requires immediate action",
+      "urgency_high": "Should be addressed within 3 days",
+      "urgency_moderate": "Can be handled this week"
     }
   },
   "incentives": {
