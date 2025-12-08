@@ -97,24 +97,51 @@ export function PerformanceGraphs({ loanOfficerId }: PerformanceGraphsProps) {
       });
     }
 
-    // Fallback: Use simulated data if no historical snapshots exist
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    // Fallback: Use real visit data grouped by month when no historical snapshots exist
+    // Generate the last 6 months ending with the current month
+    const now = new Date();
+    const monthsData: Array<{ month: string; year: number; monthIndex: number }> = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthsData.push({
+        month: date.toLocaleString('en', { month: 'short' }),
+        year: date.getFullYear(),
+        monthIndex: date.getMonth()
+      });
+    }
+
+    // Group visits by month
+    const visitsByMonth = new Map<string, number>();
+    visits.forEach(visit => {
+      if (visit.status === 'completed' && visit.scheduledDate) {
+        const visitDate = new Date(visit.scheduledDate);
+        const key = `${visitDate.getFullYear()}-${visitDate.getMonth()}`;
+        visitsByMonth.set(key, (visitsByMonth.get(key) || 0) + 1);
+      }
+    });
+
+    // Current portfolio metrics
     const currentTotalOutstanding = clients.reduce((sum, c) => sum + c.outstanding, 0);
     const currentClients = clients.length;
     const currentAvgRisk = clients.length > 0 
       ? clients.reduce((sum, c) => sum + c.riskScore, 0) / clients.length 
       : 0;
 
-    return months.map((month, index) => {
-      const growthFactor = (index + 1) / months.length;
-      const variance = 0.95 + (index * 0.02); // Deterministic variance based on index
+    return monthsData.map((monthInfo, index) => {
+      const key = `${monthInfo.year}-${monthInfo.monthIndex}`;
+      const monthVisits = visitsByMonth.get(key) || 0;
+      
+      // For current metrics, show actual values for current month, estimated for past months
+      const isCurrentMonth = index === monthsData.length - 1;
+      const progressFactor = (index + 1) / monthsData.length;
       
       return {
-        month,
-        walletSize: Math.round(currentTotalOutstanding * growthFactor * variance),
-        clients: Math.round(currentClients * growthFactor * variance),
-        avgRisk: Math.round(currentAvgRisk * (1 - growthFactor * 0.3) * variance),
-        visits: Math.round((visits.length / months.length) * (index + 1) * variance),
+        month: monthInfo.month,
+        walletSize: isCurrentMonth ? currentTotalOutstanding : Math.round(currentTotalOutstanding * progressFactor * 0.95),
+        clients: isCurrentMonth ? currentClients : Math.max(1, Math.round(currentClients * progressFactor)),
+        avgRisk: isCurrentMonth ? Math.round(currentAvgRisk) : Math.round(currentAvgRisk * (1 + (1 - progressFactor) * 0.1)),
+        visits: monthVisits,
       };
     });
   }, [clients, visits, snapshots]);
