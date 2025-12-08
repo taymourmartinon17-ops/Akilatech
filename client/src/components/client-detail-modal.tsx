@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { AlertTriangle, TrendingUp, Clock, DollarSign, RefreshCw, CheckCircle } from "lucide-react";
 import type { Client, Visit } from "@shared/schema";
+
+type Severity = 'high' | 'medium' | 'low' | 'good';
+
+interface ScoreReason {
+  icon: JSX.Element;
+  title: string;
+  reason: string;
+  severity: Severity;
+}
 
 interface ClientDetailModalProps {
   isOpen: boolean;
@@ -160,6 +169,163 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
     if (days === 1) return t('dashboard.oneDayAgo');
     return t('dashboard.daysAgo', { days });
   };
+
+  // Generate plain-language reasons for risk and urgency scores
+  const getScoreReasons = (client: Client): ScoreReason[] => {
+    const reasons: ScoreReason[] = [];
+    
+    // Late Days
+    if (client.lateDays > 60) {
+      reasons.push({
+        icon: <AlertTriangle className="w-4 h-4" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysHigh', { days: client.lateDays }),
+        severity: 'high'
+      });
+    } else if (client.lateDays > 30) {
+      reasons.push({
+        icon: <AlertTriangle className="w-4 h-4" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysMedium', { days: client.lateDays }),
+        severity: 'medium'
+      });
+    } else if (client.lateDays > 0) {
+      reasons.push({
+        icon: <Clock className="w-4 h-4" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysLow', { days: client.lateDays }),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-4 h-4" />,
+        title: t('scoreReasons.latePayments'),
+        reason: t('scoreReasons.lateDaysGood'),
+        severity: 'good'
+      });
+    }
+
+    // Outstanding at Risk
+    if (client.outstandingAtRisk > 5000) {
+      reasons.push({
+        icon: <DollarSign className="w-4 h-4" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingHigh', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'high'
+      });
+    } else if (client.outstandingAtRisk > 1000) {
+      reasons.push({
+        icon: <DollarSign className="w-4 h-4" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingMedium', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'medium'
+      });
+    } else if (client.outstandingAtRisk > 0) {
+      reasons.push({
+        icon: <DollarSign className="w-4 h-4" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingLow', { amount: client.outstandingAtRisk.toLocaleString() }),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-4 h-4" />,
+        title: t('scoreReasons.atRiskAmount'),
+        reason: t('scoreReasons.outstandingGood'),
+        severity: 'good'
+      });
+    }
+
+    // Reschedules
+    if (client.countReschedule > 3) {
+      reasons.push({
+        icon: <RefreshCw className="w-4 h-4" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesHigh', { count: client.countReschedule }),
+        severity: 'high'
+      });
+    } else if (client.countReschedule > 1) {
+      reasons.push({
+        icon: <RefreshCw className="w-4 h-4" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesMedium', { count: client.countReschedule }),
+        severity: 'medium'
+      });
+    } else if (client.countReschedule === 1) {
+      reasons.push({
+        icon: <RefreshCw className="w-4 h-4" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesLow'),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-4 h-4" />,
+        title: t('scoreReasons.loanReschedules'),
+        reason: t('scoreReasons.reschedulesGood'),
+        severity: 'good'
+      });
+    }
+
+    // Delayed Instalments
+    if (client.totalDelayedInstalments > 10) {
+      reasons.push({
+        icon: <TrendingUp className="w-4 h-4" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedHigh', { count: client.totalDelayedInstalments }),
+        severity: 'high'
+      });
+    } else if (client.totalDelayedInstalments > 5) {
+      reasons.push({
+        icon: <TrendingUp className="w-4 h-4" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedMedium', { count: client.totalDelayedInstalments }),
+        severity: 'medium'
+      });
+    } else if (client.totalDelayedInstalments > 0) {
+      reasons.push({
+        icon: <TrendingUp className="w-4 h-4" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedLow', { count: client.totalDelayedInstalments }),
+        severity: 'low'
+      });
+    } else {
+      reasons.push({
+        icon: <CheckCircle className="w-4 h-4" />,
+        title: t('scoreReasons.delayedInstalments'),
+        reason: t('scoreReasons.delayedGood'),
+        severity: 'good'
+      });
+    }
+
+    // Sort by severity (high first, then medium, low, good)
+    const severityOrder: Record<Severity, number> = { high: 0, medium: 1, low: 2, good: 3 };
+    return reasons.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+  };
+
+  const getSeverityStyles = (severity: Severity) => {
+    switch (severity) {
+      case 'high':
+        return 'bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-900/30';
+      case 'medium':
+        return 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900/30';
+      case 'low':
+        return 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/30';
+      case 'good':
+        return 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900/30';
+    }
+  };
+
+  const getSeverityIconColor = (severity: Severity) => {
+    switch (severity) {
+      case 'high': return 'text-purple-600 dark:text-purple-400';
+      case 'medium': return 'text-indigo-600 dark:text-indigo-400';
+      case 'low': return 'text-blue-600 dark:text-blue-400';
+      case 'good': return 'text-green-600 dark:text-green-400';
+    }
+  };
+
+  const scoreReasons = getScoreReasons(client);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -341,37 +507,30 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
             
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
-                <i className="fas fa-chart-bar me-2 text-primary"></i>
-                {t('client.riskBreakdown')}
+                <i className="fas fa-lightbulb me-2 text-primary"></i>
+                {t('client.keyInsights')}
               </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('client.riskScoreLabel')}:</span>
-                  <span className="font-medium">{client.riskScore.toFixed(1)}% (50% {t('client.weight')})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('client.daysSinceLastInteraction')}:</span>
-                  <span className="font-medium">
-                    {(() => {
-                      const dates = [];
-                      if (client.lastVisitDate) dates.push(new Date(client.lastVisitDate));
-                      if (client.lastPhoneCallDate) dates.push(new Date(client.lastPhoneCallDate));
-                      
-                      if (dates.length > 0) {
-                        const mostRecent = new Date(Math.max(...dates.map(d => d.getTime())));
-                        const days = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
-                        return `${days} days (40% ${t('client.weight')})`;
-                      }
-                      return `30 days (40% ${t('client.weight')})`;
-                    })()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('client.feedbackImpact')}:</span>
-                  <span className="font-medium">
-                    {client.feedbackScore || 0}/5 (10% {t('client.weight')})
-                  </span>
-                </div>
+              <div className="space-y-2">
+                {scoreReasons.slice(0, 4).map((reason, index) => (
+                  <div 
+                    key={index}
+                    className={`p-2.5 rounded-lg border ${getSeverityStyles(reason.severity)}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className={`mt-0.5 ${getSeverityIconColor(reason.severity)}`}>
+                        {reason.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-muted-foreground mb-0.5">
+                          {reason.title}
+                        </div>
+                        <div className="text-sm font-medium">
+                          {reason.reason}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

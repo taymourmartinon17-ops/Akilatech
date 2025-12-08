@@ -218,6 +218,7 @@
     "activeInPriority": "Active in Priority Actions",
     "activeInPriorityDesc": "This client is currently active and appears in priority action lists.",
     "riskBreakdown": "Risk Breakdown",
+    "keyInsights": "Key Insights",
     "riskScoreLabel": "Risk Score",
     "daysSinceLastInteraction": "Days Since Last Interaction",
     "feedbackImpact": "Feedback Impact",

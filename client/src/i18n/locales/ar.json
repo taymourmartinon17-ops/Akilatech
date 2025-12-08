@@ -218,6 +218,7 @@
     "activeInPriority": "نشط في الإجراءات ذات الأولوية",
     "activeInPriorityDesc": "هذا العميل نشط حالياً ويظهر في قوائم الإجراءات ذات الأولوية.",
     "riskBreakdown": "تفصيل المخاطر",
+    "keyInsights": "المعلومات الرئيسية",
     "riskScoreLabel": "درجة المخاطر",
     "daysSinceLastInteraction": "الأيام منذ آخر تفاعل",
     "feedbackImpact": "تأثير التقييم",
