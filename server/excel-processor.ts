@@ -232,6 +232,9 @@ function prepareDataVectorized(workbook: XLSX.WorkBook): { data: ProcessedRow[],
     // Column mapping
     const columnMapping: Record<string, string> = {
       'client id': 'Client ID',
+      'application_no': 'Client ID',
+      'application no': 'Client ID',
+      'applicationno': 'Client ID',
       'client name': 'Client Name',
       'loan officer id': 'Loan Officer ID',
       'lo id': 'Loan Officer ID',
