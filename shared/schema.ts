@@ -77,8 +77,11 @@ export const clients = pgTable("clients", {
   actionSuggestions: jsonb("action_suggestions").$type<{
     action: 'call' | 'visit' | 'email' | 'restructure' | 'monitor' | 'escalate';
     description: string;
+    descriptionKey?: string;
     urgency: 'immediate' | 'within_3_days' | 'within_week' | 'within_month';
     reasoning: string;
+    reasoningKey?: string;
+    params?: { feedbackScore?: string; riskScore?: string; lateDays?: number };
   }[]>(),
   // Snooze functionality
   snoozedUntil: timestamp("snoozed_until"),

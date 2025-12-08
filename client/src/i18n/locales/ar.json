@@ -648,7 +648,17 @@
     "visitHighRisk": "إجراء زيارة شخصية لتقييم الحساب عالي المخاطر",
     "visitPaymentDiscussion": "إجراء زيارة شخصية لمناقشة الدفع",
     "callReasoningFeedback": "درجة تقييم العميل {{score}}/5 تشير إلى استجابة جيدة عبر الهاتف.",
-    "visitReasoningRisk": "درجة المخاطر {{score}}/100 تشير إلى ضرورة التدخل الشخصي."
+    "visitReasoningRisk": "درجة المخاطر {{score}}/100 تشير إلى ضرورة التدخل الشخصي.",
+    "suggestions": {
+      "call_high_feedback": "مكالمة هاتفية موصى بها - العميل يستجيب جيداً للمكالمات",
+      "call_high_feedback_reason": "هذا العميل لديه تقييم جيد ({{feedbackScore}}/5)، لذا ستكون المكالمة الهاتفية فعالة لمتابعة حسابه.",
+      "visit_low_feedback": "زيارة شخصية مطلوبة - يصعب الوصول إليه هاتفياً",
+      "visit_low_feedback_reason": "هذا العميل لديه تقييم منخفض ({{feedbackScore}}/5) ومتأخر {{lateDays}} يوماً. زيارة شخصية ضرورية لأن الاتصال الهاتفي لم يكن فعالاً.",
+      "visit_high_risk": "زيارة شخصية ضرورية - وضع عالي المخاطر",
+      "visit_high_risk_reason": "هذا العميل لديه تقييم متوسط ({{feedbackScore}}/5) لكن مستوى خطورته ({{riskScore}}) مرتفع مع تأخر {{lateDays}} يوماً. يوصى باجتماع شخصي.",
+      "call_moderate_risk": "مكالمة هاتفية موصى بها - متابعة معتدلة مطلوبة",
+      "call_moderate_risk_reason": "هذا العميل لديه تقييم متوسط ({{feedbackScore}}/5) مع مخاطر معتدلة ({{riskScore}}). ستعمل المكالمة الهاتفية جيداً لهذا الحساب المتأخر {{lateDays}} يوماً."
+    }
   },
   "incentives": {
     "pageTitle": "الحوافز والإنجازات الخاصة بك",

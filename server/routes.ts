@@ -1066,37 +1066,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const urgencyTiming = getUrgencyTiming(clientUrgency);
         
         // DYNAMIC FEEDBACK-FIRST CONTACT METHOD - ONE CLEAR RECOMMENDATION
+        // Use translation keys instead of hardcoded English text for i18n support
         if (feedbackScore >= callThreshold) {
           // High feedback: Phone call sufficient (threshold based on feedback weight)
           singleSuggestion = {
             action: 'call' as const,
-            description: 'Phone call sufficient - client responsive to communication',
+            descriptionKey: 'call_high_feedback',
+            description: 'call_high_feedback',
             urgency: urgencyTiming,
-            reasoning: `High feedback score (${feedbackScore}/5, threshold: ${callThreshold.toFixed(1)}) indicates cooperative client - phone contact effective for payment follow-up. Urgency: ${urgencyTiming} (score: ${clientUrgency.toFixed(1)}/100). Weight settings favor communication-based approach (${feedbackWeight}% feedback influence).`
+            reasoningKey: 'call_high_feedback_reason',
+            reasoning: 'call_high_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1) }
           };
         } else if (feedbackScore <= visitThreshold) {
           // Low feedback: Visit required (threshold based on feedback weight)
           singleSuggestion = {
             action: 'visit' as const,
-            description: 'In-person visit required - difficult client contact',
+            descriptionKey: 'visit_low_feedback',
+            description: 'visit_low_feedback',
             urgency: urgencyTiming,
-            reasoning: `Low feedback score (${feedbackScore}/5, threshold: ${visitThreshold.toFixed(1)}) indicates poor communication - face-to-face meeting needed. Urgency: ${urgencyTiming} (score: ${clientUrgency.toFixed(1)}/100, ${client.lateDays} days overdue). Weight settings emphasize personal contact for low-feedback clients.`
+            reasoningKey: 'visit_low_feedback_reason',
+            reasoning: 'visit_low_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1), lateDays: client.lateDays }
           };
         } else {
           // Medium feedback: Risk-based tiebreaker using dynamic risk threshold
           if (client.riskScore > riskThreshold || client.lateDays > 45) {
             singleSuggestion = {
               action: 'visit' as const,
-              description: 'High-risk client requires in-person assessment',
+              descriptionKey: 'visit_high_risk',
+              description: 'visit_high_risk',
               urgency: urgencyTiming,
-              reasoning: `Medium feedback score (${feedbackScore}/5) with high risk (${client.riskScore.toFixed(0)} > ${riskThreshold.toFixed(0)}) or extended delays (${client.lateDays} days) requires personal consultation. Urgency: ${urgencyTiming} (score: ${clientUrgency.toFixed(1)}/100). Risk weight (${riskWeight}%) influences visit recommendation.`
+              reasoningKey: 'visit_high_risk_reason',
+              reasoning: 'visit_high_risk_reason',
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays }
             };
           } else {
             singleSuggestion = {
               action: 'call' as const,
-              description: 'Phone call recommended for moderate-risk follow-up',
+              descriptionKey: 'call_moderate_risk',
+              description: 'call_moderate_risk',
               urgency: urgencyTiming,
-              reasoning: `Medium feedback score (${feedbackScore}/5) with moderate risk (${client.riskScore.toFixed(0)} ≤ ${riskThreshold.toFixed(0)}) allows phone contact. Urgency: ${urgencyTiming} (score: ${clientUrgency.toFixed(1)}/100, ${client.lateDays} days overdue). Current weight settings support call-first approach.`
+              reasoningKey: 'call_moderate_risk_reason',
+              reasoning: 'call_moderate_risk_reason',
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays }
             };
           }
         }

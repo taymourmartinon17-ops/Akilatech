@@ -648,7 +648,17 @@
     "visitHighRisk": "Conduct in-person visit for high-risk account assessment",
     "visitPaymentDiscussion": "Conduct in-person visit for payment discussion",
     "callReasoningFeedback": "Client feedback score of {{score}}/5 indicates good phone responsiveness.",
-    "visitReasoningRisk": "Risk score {{score}}/100 suggests in-person intervention needed."
+    "visitReasoningRisk": "Risk score {{score}}/100 suggests in-person intervention needed.",
+    "suggestions": {
+      "call_high_feedback": "Phone call recommended - client responds well to calls",
+      "call_high_feedback_reason": "This client has a good feedback score ({{feedbackScore}}/5), so a phone call should be effective for following up on their account.",
+      "visit_low_feedback": "In-person visit required - difficult to reach by phone",
+      "visit_low_feedback_reason": "This client has a low feedback score ({{feedbackScore}}/5) and is {{lateDays}} days overdue. A personal visit is needed since phone contact hasn't been effective.",
+      "visit_high_risk": "Personal visit needed - high-risk situation",
+      "visit_high_risk_reason": "This client has a medium feedback score ({{feedbackScore}}/5) but their risk level ({{riskScore}}) is elevated with {{lateDays}} days overdue. An in-person meeting is recommended.",
+      "call_moderate_risk": "Phone call recommended - moderate follow-up needed",
+      "call_moderate_risk_reason": "This client has a medium feedback score ({{feedbackScore}}/5) with moderate risk ({{riskScore}}). A phone call should work well for this {{lateDays}}-day overdue account."
+    }
   },
   "incentives": {
     "pageTitle": "Your Incentives & Achievements",

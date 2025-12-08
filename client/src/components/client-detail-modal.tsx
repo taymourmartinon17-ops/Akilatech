@@ -589,8 +589,16 @@ export function ClientDetailModal({ isOpen, onClose, client }: ClientDetailModal
                           {formatUrgency(suggestion.urgency)}
                         </Badge>
                       </div>
-                      <p className="text-sm font-medium mb-1">{suggestion.description}</p>
-                      <p className="text-xs text-muted-foreground italic">{suggestion.reasoning}</p>
+                      <p className="text-sm font-medium mb-1">
+                        {(suggestion as any).descriptionKey 
+                          ? t(`actions.suggestions.${(suggestion as any).descriptionKey}`, (suggestion as any).params || {})
+                          : suggestion.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground italic">
+                        {(suggestion as any).reasoningKey 
+                          ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
+                          : suggestion.reasoning}
+                      </p>
                     </div>
                   );
                 })}

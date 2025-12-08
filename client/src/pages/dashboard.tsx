@@ -373,15 +373,22 @@ export default function Dashboard() {
                                     <i className={`fas ${getActionIcon(suggestion.action)} text-white text-sm`}></i>
                                   </div>
                                   <Badge className={`text-xs px-1.5 md:px-2 py-0 ${getUrgencyColor(suggestion.urgency)} text-white border-0`}>
-                                    {suggestion.urgency.replace('_', ' ')}
+                                    {suggestion.urgency === 'immediate' ? t('urgency.immediateLabel') :
+                                     suggestion.urgency === 'within_3_days' ? t('urgency.within3DaysLabel') :
+                                     suggestion.urgency === 'within_week' ? t('urgency.withinWeekLabel') :
+                                     t('urgency.withinMonthLabel')}
                                   </Badge>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-foreground text-xs md:text-sm">
-                                    {suggestion.description}
+                                    {(suggestion as any).descriptionKey 
+                                      ? t(`actions.suggestions.${(suggestion as any).descriptionKey}`, (suggestion as any).params || {})
+                                      : suggestion.description}
                                   </p>
                                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2 md:line-clamp-none">
-                                    {suggestion.reasoning}
+                                    {(suggestion as any).reasoningKey 
+                                      ? t(`actions.suggestions.${(suggestion as any).reasoningKey}`, (suggestion as any).params || {})
+                                      : suggestion.reasoning}
                                   </p>
                                   <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
                                     <i className="fas fa-info-circle me-1"></i>
@@ -502,10 +509,18 @@ export default function Dashboard() {
             <div className="space-y-4 mt-4">
               <div className="bg-muted/30 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">{selectedAction.client.name}</h3>
-                <p className="text-sm text-muted-foreground">{selectedAction.suggestion.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedAction.suggestion.descriptionKey 
+                    ? t(`actions.suggestions.${selectedAction.suggestion.descriptionKey}`, selectedAction.suggestion.params || {})
+                    : selectedAction.suggestion.description}
+                </p>
               </div>
               <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <p className="text-sm">{selectedAction.suggestion.reasoning}</p>
+                <p className="text-sm">
+                  {selectedAction.suggestion.reasoningKey 
+                    ? t(`actions.suggestions.${selectedAction.suggestion.reasoningKey}`, selectedAction.suggestion.params || {})
+                    : selectedAction.suggestion.reasoning}
+                </p>
               </div>
             </div>
           )}
