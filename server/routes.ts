@@ -1244,71 +1244,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DEBUG] Clients found for ${loanOfficerId} (isAdmin: ${user.isAdmin}): ${clients.length}`);
       
-      // Generate reasonPoints on-the-fly for suggestions that don't have them
-      const enhancedClients = clients.map(client => {
-        if (client.actionSuggestions && Array.isArray(client.actionSuggestions)) {
-          const enhancedSuggestions = client.actionSuggestions.map((suggestion: any) => {
-            if (suggestion.reasonPoints && suggestion.reasonPoints.length > 0) {
-              return suggestion; // Already has reasonPoints
-            }
-            
-            // Generate reasonPoints based on client data
-            const reasonPoints: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[] = [];
-            const feedbackScore = client.feedbackScore || 3;
-            
-            // Add feedback-based reason
-            if (feedbackScore >= 4) {
-              reasonPoints.push({ key: 'feedback_excellent', severity: 'good', params: { score: feedbackScore.toFixed(1) } });
-            } else if (feedbackScore >= 3) {
-              reasonPoints.push({ key: 'feedback_good', severity: 'low', params: { score: feedbackScore.toFixed(1) } });
-            } else if (feedbackScore >= 2) {
-              reasonPoints.push({ key: 'feedback_fair', severity: 'medium', params: { score: feedbackScore.toFixed(1) } });
-            } else {
-              reasonPoints.push({ key: 'feedback_poor', severity: 'high', params: { score: feedbackScore.toFixed(1) } });
-            }
-            
-            // Add risk-based reason
-            if (client.riskScore >= 70) {
-              reasonPoints.push({ key: 'risk_high', severity: 'high', params: { score: client.riskScore.toFixed(0) } });
-            } else if (client.riskScore >= 50) {
-              reasonPoints.push({ key: 'risk_medium', severity: 'medium', params: { score: client.riskScore.toFixed(0) } });
-            } else if (client.riskScore >= 30) {
-              reasonPoints.push({ key: 'risk_low', severity: 'low', params: { score: client.riskScore.toFixed(0) } });
-            } else {
-              reasonPoints.push({ key: 'risk_minimal', severity: 'good', params: { score: client.riskScore.toFixed(0) } });
-            }
-            
-            // Add late days reason
-            if (client.lateDays > 60) {
-              reasonPoints.push({ key: 'overdue_severe', severity: 'high', params: { days: client.lateDays } });
-            } else if (client.lateDays > 30) {
-              reasonPoints.push({ key: 'overdue_moderate', severity: 'medium', params: { days: client.lateDays } });
-            } else if (client.lateDays > 0) {
-              reasonPoints.push({ key: 'overdue_minor', severity: 'low', params: { days: client.lateDays } });
-            } else {
-              reasonPoints.push({ key: 'payment_current', severity: 'good' });
-            }
-            
-            // Add urgency-based reason
-            const clientUrgency = client.compositeUrgency || 0;
-            if (clientUrgency >= 80) {
-              reasonPoints.push({ key: 'urgency_critical', severity: 'high' });
-            } else if (clientUrgency >= 60) {
-              reasonPoints.push({ key: 'urgency_high', severity: 'medium' });
-            } else if (clientUrgency >= 40) {
-              reasonPoints.push({ key: 'urgency_moderate', severity: 'low' });
-            }
-            
-            // Sort by severity
-            const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
-            reasonPoints.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
-            
-            return { ...suggestion, reasonPoints };
-          });
-          
-          return { ...client, actionSuggestions: enhancedSuggestions };
+      // Helper function to generate action suggestion with reasonPoints for a client
+      const generateActionSuggestion = (client: any) => {
+        const feedbackScore = client.feedbackScore || 3;
+        const clientUrgency = client.compositeUrgency || 0;
+        
+        // Generate structured reason points
+        const reasonPoints: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[] = [];
+        
+        // Add feedback-based reason
+        if (feedbackScore >= 4) {
+          reasonPoints.push({ key: 'feedback_excellent', severity: 'good', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 3) {
+          reasonPoints.push({ key: 'feedback_good', severity: 'low', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 2) {
+          reasonPoints.push({ key: 'feedback_fair', severity: 'medium', params: { score: feedbackScore.toFixed(1) } });
+        } else {
+          reasonPoints.push({ key: 'feedback_poor', severity: 'high', params: { score: feedbackScore.toFixed(1) } });
         }
-        return client;
+        
+        // Add risk-based reason
+        if (client.riskScore >= 70) {
+          reasonPoints.push({ key: 'risk_high', severity: 'high', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 50) {
+          reasonPoints.push({ key: 'risk_medium', severity: 'medium', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 30) {
+          reasonPoints.push({ key: 'risk_low', severity: 'low', params: { score: client.riskScore.toFixed(0) } });
+        } else {
+          reasonPoints.push({ key: 'risk_minimal', severity: 'good', params: { score: client.riskScore.toFixed(0) } });
+        }
+        
+        // Add late days reason
+        if (client.lateDays > 60) {
+          reasonPoints.push({ key: 'overdue_severe', severity: 'high', params: { days: client.lateDays } });
+        } else if (client.lateDays > 30) {
+          reasonPoints.push({ key: 'overdue_moderate', severity: 'medium', params: { days: client.lateDays } });
+        } else if (client.lateDays > 0) {
+          reasonPoints.push({ key: 'overdue_minor', severity: 'low', params: { days: client.lateDays } });
+        } else {
+          reasonPoints.push({ key: 'payment_current', severity: 'good' });
+        }
+        
+        // Add urgency-based reason
+        if (clientUrgency >= 80) {
+          reasonPoints.push({ key: 'urgency_critical', severity: 'high' });
+        } else if (clientUrgency >= 60) {
+          reasonPoints.push({ key: 'urgency_high', severity: 'medium' });
+        } else if (clientUrgency >= 40) {
+          reasonPoints.push({ key: 'urgency_moderate', severity: 'low' });
+        }
+        
+        // Sort by severity
+        const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+        reasonPoints.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+        
+        // Get urgency timing
+        const getUrgencyTiming = (score: number): 'immediate' | 'within_3_days' | 'within_week' | 'within_month' => {
+          if (score >= 80) return 'immediate';
+          if (score >= 60) return 'within_3_days';
+          if (score >= 40) return 'within_week';
+          return 'within_month';
+        };
+        const urgencyTiming = getUrgencyTiming(clientUrgency);
+        
+        // Determine action type based on feedback and risk
+        const callThreshold = 3.25; 
+        const visitThreshold = 2.25;
+        const riskThreshold = 50;
+        
+        if (feedbackScore >= callThreshold) {
+          return {
+            action: 'call' as const,
+            descriptionKey: 'call_high_feedback',
+            description: 'call_high_feedback',
+            urgency: urgencyTiming,
+            reasoningKey: 'call_high_feedback_reason',
+            reasoning: 'call_high_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1) },
+            reasonPoints
+          };
+        } else if (feedbackScore <= visitThreshold) {
+          return {
+            action: 'visit' as const,
+            descriptionKey: 'visit_low_feedback',
+            description: 'visit_low_feedback',
+            urgency: urgencyTiming,
+            reasoningKey: 'visit_low_feedback_reason',
+            reasoning: 'visit_low_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1), lateDays: client.lateDays },
+            reasonPoints
+          };
+        } else if (client.riskScore > riskThreshold || client.lateDays > 45) {
+          return {
+            action: 'visit' as const,
+            descriptionKey: 'visit_high_risk',
+            description: 'visit_high_risk',
+            urgency: urgencyTiming,
+            reasoningKey: 'visit_high_risk_reason',
+            reasoning: 'visit_high_risk_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+            reasonPoints
+          };
+        } else {
+          return {
+            action: 'call' as const,
+            descriptionKey: 'call_moderate_risk',
+            description: 'call_moderate_risk',
+            urgency: urgencyTiming,
+            reasoningKey: 'call_moderate_risk_reason',
+            reasoning: 'call_moderate_risk_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+            reasonPoints
+          };
+        }
+      };
+      
+      // Generate action suggestions on-the-fly for ALL clients
+      const enhancedClients = clients.map(client => {
+        // Always generate a fresh suggestion with reasonPoints
+        const newSuggestion = generateActionSuggestion(client);
+        return { ...client, actionSuggestions: [newSuggestion] };
       });
       
       res.json(enhancedClients);
@@ -2965,48 +3020,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[ACTION REGEN] Using dynamic thresholds - Call: ${callThreshold.toFixed(1)}, Visit: ${visitThreshold.toFixed(1)}, Risk: ${riskThreshold.toFixed(0)}`);
       
-      // Focus on the 20 most urgent clients (sorted by urgency score)
+      // Process ALL clients for this officer (not just top 20)
       const sortedByUrgency = allClients.sort((a, b) => (b.compositeUrgency || 0) - (a.compositeUrgency || 0));
-      const clientsToUpdate = sortedByUrgency.slice(0, 20);
       
-      console.log(`[ACTION REGEN] Updating ${clientsToUpdate.length} most urgent clients out of ${allClients.length} total`);
+      console.log(`[ACTION REGEN] Updating ALL ${sortedByUrgency.length} clients for officer ${loanOfficerId}`);
       
       let updatedCount = 0;
       
-      for (const client of clientsToUpdate) {
+      // Helper to get urgency timing based on composite urgency score
+      const getUrgencyTiming = (urgencyScore: number): 'immediate' | 'within_3_days' | 'within_week' | 'within_month' => {
+        if (urgencyScore >= 80) return 'immediate';
+        if (urgencyScore >= 60) return 'within_3_days';
+        if (urgencyScore >= 40) return 'within_week';
+        return 'within_month';
+      };
+      
+      for (const client of sortedByUrgency) {
         const feedbackScore = client.feedbackScore || 3;
+        const clientUrgency = client.compositeUrgency || 0;
+        const urgencyTiming = getUrgencyTiming(clientUrgency);
+        
+        // Generate structured reason points for each suggestion
+        const reasonPoints: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[] = [];
+        
+        // Add feedback-based reason
+        if (feedbackScore >= 4) {
+          reasonPoints.push({ key: 'feedback_excellent', severity: 'good', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 3) {
+          reasonPoints.push({ key: 'feedback_good', severity: 'low', params: { score: feedbackScore.toFixed(1) } });
+        } else if (feedbackScore >= 2) {
+          reasonPoints.push({ key: 'feedback_fair', severity: 'medium', params: { score: feedbackScore.toFixed(1) } });
+        } else {
+          reasonPoints.push({ key: 'feedback_poor', severity: 'high', params: { score: feedbackScore.toFixed(1) } });
+        }
+        
+        // Add risk-based reason
+        if (client.riskScore >= 70) {
+          reasonPoints.push({ key: 'risk_high', severity: 'high', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 50) {
+          reasonPoints.push({ key: 'risk_medium', severity: 'medium', params: { score: client.riskScore.toFixed(0) } });
+        } else if (client.riskScore >= 30) {
+          reasonPoints.push({ key: 'risk_low', severity: 'low', params: { score: client.riskScore.toFixed(0) } });
+        } else {
+          reasonPoints.push({ key: 'risk_minimal', severity: 'good', params: { score: client.riskScore.toFixed(0) } });
+        }
+        
+        // Add late days reason
+        if (client.lateDays > 60) {
+          reasonPoints.push({ key: 'overdue_severe', severity: 'high', params: { days: client.lateDays } });
+        } else if (client.lateDays > 30) {
+          reasonPoints.push({ key: 'overdue_moderate', severity: 'medium', params: { days: client.lateDays } });
+        } else if (client.lateDays > 0) {
+          reasonPoints.push({ key: 'overdue_minor', severity: 'low', params: { days: client.lateDays } });
+        } else {
+          reasonPoints.push({ key: 'payment_current', severity: 'good' });
+        }
+        
+        // Add urgency-based reason
+        if (clientUrgency >= 80) {
+          reasonPoints.push({ key: 'urgency_critical', severity: 'high' });
+        } else if (clientUrgency >= 60) {
+          reasonPoints.push({ key: 'urgency_high', severity: 'medium' });
+        } else if (clientUrgency >= 40) {
+          reasonPoints.push({ key: 'urgency_moderate', severity: 'low' });
+        }
+        
+        // Sort by severity (high first)
+        const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+        reasonPoints.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+        
         let singleSuggestion = null; // Only ONE suggestion per client
         
         // DYNAMIC FEEDBACK-FIRST CONTACT METHOD - ONE CLEAR RECOMMENDATION
         if (feedbackScore >= callThreshold) {
           singleSuggestion = {
             action: 'call' as const,
-            description: 'Phone call sufficient - client responsive to communication',
-            urgency: client.lateDays > 30 ? 'immediate' as const : 'within_3_days' as const,
-            reasoning: `High feedback score (${feedbackScore}/5, threshold: ${callThreshold.toFixed(1)}) indicates cooperative client - phone contact effective for payment follow-up. Weight settings favor communication-based approach (${feedbackWeight}% feedback influence).`
+            descriptionKey: 'call_high_feedback',
+            description: 'call_high_feedback',
+            urgency: urgencyTiming,
+            reasoningKey: 'call_high_feedback_reason',
+            reasoning: 'call_high_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1) },
+            reasonPoints
           };
         } else if (feedbackScore <= visitThreshold) {
           singleSuggestion = {
             action: 'visit' as const,
-            description: 'In-person visit required - difficult client contact',
-            urgency: client.lateDays > 30 ? 'within_3_days' as const : 'within_week' as const,
-            reasoning: `Low feedback score (${feedbackScore}/5, threshold: ${visitThreshold.toFixed(1)}) indicates poor communication - face-to-face meeting needed for ${client.lateDays} days overdue. Weight settings emphasize personal contact for low-feedback clients.`
+            descriptionKey: 'visit_low_feedback',
+            description: 'visit_low_feedback',
+            urgency: urgencyTiming,
+            reasoningKey: 'visit_low_feedback_reason',
+            reasoning: 'visit_low_feedback_reason',
+            params: { feedbackScore: feedbackScore.toFixed(1), lateDays: client.lateDays },
+            reasonPoints
           };
         } else {
           // Medium feedback: Risk-based tiebreaker using dynamic risk threshold
           if (client.riskScore > riskThreshold || client.lateDays > 45) {
             singleSuggestion = {
               action: 'visit' as const,
-              description: 'High-risk client requires in-person assessment',
-              urgency: 'within_3_days' as const,
-              reasoning: `Medium feedback score (${feedbackScore}/5) with high risk (${client.riskScore.toFixed(0)} > ${riskThreshold.toFixed(0)}) or extended delays (${client.lateDays} days) requires personal consultation. Risk weight (${riskWeight}%) influences visit recommendation.`
+              descriptionKey: 'visit_high_risk',
+              description: 'visit_high_risk',
+              urgency: urgencyTiming,
+              reasoningKey: 'visit_high_risk_reason',
+              reasoning: 'visit_high_risk_reason',
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+              reasonPoints
             };
           } else {
             singleSuggestion = {
               action: 'call' as const,
-              description: 'Phone call recommended for moderate-risk follow-up',
-              urgency: client.lateDays > 30 ? 'immediate' as const : 'within_3_days' as const,
-              reasoning: `Medium feedback score (${feedbackScore}/5) with moderate risk (${client.riskScore.toFixed(0)} ≤ ${riskThreshold.toFixed(0)}) allows phone contact for ${client.lateDays} days overdue. Current weight settings support call-first approach.`
+              descriptionKey: 'call_moderate_risk',
+              description: 'call_moderate_risk',
+              urgency: urgencyTiming,
+              reasoningKey: 'call_moderate_risk_reason',
+              reasoning: 'call_moderate_risk_reason',
+              params: { feedbackScore: feedbackScore.toFixed(1), riskScore: client.riskScore.toFixed(0), lateDays: client.lateDays },
+              reasonPoints
             };
           }
         }
@@ -3018,7 +3148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedCount++;
       }
       
-      console.log(`[ACTION REGEN] Successfully regenerated ${updatedCount} action suggestions for most urgent clients with new weights (F:${feedbackWeight}% R:${riskWeight}% D:${daysWeight}%)`);
+      console.log(`[ACTION REGEN] Successfully regenerated ${updatedCount} action suggestions for ALL clients with new weights (F:${feedbackWeight}% R:${riskWeight}% D:${daysWeight}%)`);
     } catch (error) {
       console.error(`[ACTION REGEN] Error regenerating action suggestions for officer ${loanOfficerId}:`, error);
     }
