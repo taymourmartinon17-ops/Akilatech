@@ -165,6 +165,8 @@ export interface IStorage {
     currentStreak: number;
     rank: number;
     badgeCount: number;
+    completedVisits: number;
+    completedCalls: number;
   }>>;
   updateUserPoints(organizationId: string, loanOfficerId: string, pointsToAdd: number): Promise<void>;
   updateUserStreak(organizationId: string, loanOfficerId: string): Promise<void>;
@@ -174,6 +176,8 @@ export interface IStorage {
     currentRank: number | null;
     badgeCount: number;
     recentEvents: GamificationEvent[];
+    completedVisits: number;
+    completedCalls: number;
   } | undefined>;
   
   // Enhanced gamification methods for performance widget
@@ -184,6 +188,8 @@ export interface IStorage {
     totalPoints: number;
     currentStreak: number;
     badges: number;
+    completedVisits: number;
+    completedCalls: number;
     isCurrentUser?: boolean;
   }>>;
   getDetailedUserStats(organizationId: string, loanOfficerId: string): Promise<{
@@ -1260,6 +1266,8 @@ export class MemStorage implements IStorage {
     currentStreak: number;
     rank: number;
     badgeCount: number;
+    completedVisits: number;
+    completedCalls: number;
   }>> {
     throw new Error("Gamification not supported in MemStorage - use DatabaseStorage");
   }
@@ -1278,6 +1286,8 @@ export class MemStorage implements IStorage {
     currentRank: number | null;
     badgeCount: number;
     recentEvents: GamificationEvent[];
+    completedVisits: number;
+    completedCalls: number;
   } | undefined> {
     throw new Error("Gamification not supported in MemStorage - use DatabaseStorage");
   }
@@ -1289,6 +1299,8 @@ export class MemStorage implements IStorage {
     totalPoints: number;
     currentStreak: number;
     badges: number;
+    completedVisits: number;
+    completedCalls: number;
     isCurrentUser?: boolean;
   }>> {
     throw new Error("Gamification not supported in MemStorage - use DatabaseStorage");
@@ -2212,6 +2224,8 @@ export class DatabaseStorage implements IStorage {
     currentStreak: number;
     rank: number;
     badgeCount: number;
+    completedVisits: number;
+    completedCalls: number;
   }>> {
     let whereCondition = eq(users.organizationId, organizationId);
     
@@ -2229,15 +2243,46 @@ export class DatabaseStorage implements IStorage {
           SELECT COUNT(*)::int 
           FROM ${gamificationUserBadges} 
           WHERE ${gamificationUserBadges.loanOfficerId} = ${users.loanOfficerId}
-        )`.as('badgeCount')
+          AND ${gamificationUserBadges.organizationId} = ${organizationId}
+        )`.as('badgeCount'),
+        completedVisits: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM ${visits} 
+          WHERE ${visits.loanOfficerId} = ${users.loanOfficerId}
+          AND ${visits.organizationId} = ${organizationId}
+          AND ${visits.status} = 'completed'
+        )`.as('completedVisits'),
+        completedCalls: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM ${phoneCalls} 
+          WHERE ${phoneCalls.loanOfficerId} = ${users.loanOfficerId}
+          AND ${phoneCalls.organizationId} = ${organizationId}
+          AND ${phoneCalls.status} = 'completed'
+        )`.as('completedCalls')
       })
       .from(users)
       .where(whereCondition);
 
-    const leaderboardData = await baseQuery.orderBy(desc(users.totalPoints));
-
-    return leaderboardData.map((entry, index) => ({
+    const leaderboardData = await baseQuery;
+    
+    // Calculate performance score: completed visits (10 pts each) + completed calls (5 pts each)
+    // This gives actual performance-based ranking - ALWAYS use performance score, not gamification points
+    const scoredData = leaderboardData.map(entry => ({
       ...entry,
+      performanceScore: (entry.completedVisits * 10) + (entry.completedCalls * 5)
+    }));
+    
+    // Sort by performance score (which reflects actual work done)
+    scoredData.sort((a, b) => b.performanceScore - a.performanceScore);
+
+    return scoredData.map((entry, index) => ({
+      loanOfficerId: entry.loanOfficerId,
+      name: entry.name,
+      totalPoints: entry.performanceScore, // Use performance score as the displayed points
+      currentStreak: entry.currentStreak,
+      badgeCount: entry.badgeCount,
+      completedVisits: entry.completedVisits,
+      completedCalls: entry.completedCalls,
       rank: index + 1
     }));
   }
@@ -2290,6 +2335,8 @@ export class DatabaseStorage implements IStorage {
     currentRank: number | null;
     badgeCount: number;
     recentEvents: GamificationEvent[];
+    completedVisits: number;
+    completedCalls: number;
   } | undefined> {
     const [user] = await db.select()
       .from(users)
@@ -2303,15 +2350,57 @@ export class DatabaseStorage implements IStorage {
 
     const badgeCount = badgeCountResult[0]?.count || 0;
 
-    const allUsersRanked = await db.select({
+    // Get actual performance data (completed visits and calls)
+    const [visitCountResult] = await db.select({ count: count() })
+      .from(visits)
+      .where(and(
+        eq(visits.organizationId, organizationId),
+        eq(visits.loanOfficerId, loanOfficerId),
+        eq(visits.status, 'completed')
+      ));
+    const completedVisits = visitCountResult?.count || 0;
+
+    const [callCountResult] = await db.select({ count: count() })
+      .from(phoneCalls)
+      .where(and(
+        eq(phoneCalls.organizationId, organizationId),
+        eq(phoneCalls.loanOfficerId, loanOfficerId),
+        eq(phoneCalls.status, 'completed')
+      ));
+    const completedCalls = callCountResult?.count || 0;
+
+    // Calculate performance score for ranking
+    const performanceScore = (completedVisits * 10) + (completedCalls * 5);
+
+    // Get all users with their performance scores for ranking
+    const allUsersWithPerformance = await db.select({
       loanOfficerId: users.loanOfficerId,
-      totalPoints: users.totalPoints
+      totalPoints: users.totalPoints,
+      completedVisits: sql<number>`(
+        SELECT COUNT(*)::int FROM ${visits} 
+        WHERE ${visits.loanOfficerId} = ${users.loanOfficerId}
+        AND ${visits.organizationId} = ${organizationId}
+        AND ${visits.status} = 'completed'
+      )`.as('completedVisits'),
+      completedCalls: sql<number>`(
+        SELECT COUNT(*)::int FROM ${phoneCalls} 
+        WHERE ${phoneCalls.loanOfficerId} = ${users.loanOfficerId}
+        AND ${phoneCalls.organizationId} = ${organizationId}
+        AND ${phoneCalls.status} = 'completed'
+      )`.as('completedCalls')
     })
     .from(users)
-    .where(eq(users.organizationId, organizationId))
-    .orderBy(desc(users.totalPoints));
+    .where(eq(users.organizationId, organizationId));
 
-    const currentRank = allUsersRanked.findIndex(u => u.loanOfficerId === loanOfficerId) + 1;
+    // Sort by performance score
+    const rankedUsers = allUsersWithPerformance
+      .map(u => ({
+        ...u,
+        performanceScore: (u.completedVisits * 10) + (u.completedCalls * 5)
+      }))
+      .sort((a, b) => b.performanceScore - a.performanceScore);
+
+    const currentRank = rankedUsers.findIndex(u => u.loanOfficerId === loanOfficerId) + 1;
 
     const recentEvents = await db.select()
       .from(gamificationEvents)
@@ -2319,12 +2408,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(gamificationEvents.createdAt))
       .limit(10);
 
+    // Always use performance score as totalPoints (reflects actual work done)
     return {
-      totalPoints: user.totalPoints || 0,
+      totalPoints: performanceScore,
       currentStreak: user.currentStreak || 0,
       currentRank: currentRank > 0 ? currentRank : null,
       badgeCount: Number(badgeCount),
-      recentEvents
+      recentEvents,
+      completedVisits,
+      completedCalls
     };
   }
 
@@ -2335,40 +2427,56 @@ export class DatabaseStorage implements IStorage {
     totalPoints: number;
     currentStreak: number;
     badges: number;
+    completedVisits: number;
+    completedCalls: number;
     isCurrentUser?: boolean;
   }>> {
-    // Get top users by points
-    const topUsers = await db.select({
+    // Get all users with their actual performance data
+    const allUsers = await db.select({
       loanOfficerId: users.loanOfficerId,
       name: users.name,
       totalPoints: users.totalPoints,
       currentStreak: users.currentStreak,
+      completedVisits: sql<number>`(
+        SELECT COUNT(*)::int FROM ${visits} 
+        WHERE ${visits.loanOfficerId} = ${users.loanOfficerId}
+        AND ${visits.organizationId} = ${organizationId}
+        AND ${visits.status} = 'completed'
+      )`.as('completedVisits'),
+      completedCalls: sql<number>`(
+        SELECT COUNT(*)::int FROM ${phoneCalls} 
+        WHERE ${phoneCalls.loanOfficerId} = ${users.loanOfficerId}
+        AND ${phoneCalls.organizationId} = ${organizationId}
+        AND ${phoneCalls.status} = 'completed'
+      )`.as('completedCalls'),
+      badges: sql<number>`(
+        SELECT COUNT(*)::int FROM ${gamificationUserBadges} 
+        WHERE ${gamificationUserBadges.loanOfficerId} = ${users.loanOfficerId}
+        AND ${gamificationUserBadges.organizationId} = ${organizationId}
+      )`.as('badges')
     })
     .from(users)
-    .where(eq(users.organizationId, organizationId))
-    .orderBy(desc(users.totalPoints))
-    .limit(limit);
+    .where(eq(users.organizationId, organizationId));
 
-    // Get badge counts for each user
-    const leaderboard = await Promise.all(topUsers.map(async (user, index) => {
-      const badgeCountResult = await db.select({ count: count() })
-        .from(gamificationUserBadges)
-        .where(and(
-          eq(gamificationUserBadges.organizationId, organizationId),
-          eq(gamificationUserBadges.loanOfficerId, user.loanOfficerId)
-        ));
+    // Calculate performance score and sort - ALWAYS use performance score, not gamification points
+    const scoredUsers = allUsers
+      .map(user => ({
+        ...user,
+        performanceScore: (user.completedVisits * 10) + (user.completedCalls * 5)
+      }))
+      .sort((a, b) => b.performanceScore - a.performanceScore)
+      .slice(0, limit);
 
-      return {
-        rank: index + 1,
-        loanOfficerId: user.loanOfficerId,
-        name: user.name,
-        totalPoints: user.totalPoints || 0,
-        currentStreak: user.currentStreak || 0,
-        badges: Number(badgeCountResult[0]?.count || 0),
-      };
+    return scoredUsers.map((user, index) => ({
+      rank: index + 1,
+      loanOfficerId: user.loanOfficerId,
+      name: user.name,
+      totalPoints: user.performanceScore, // Use performance score as the displayed points
+      currentStreak: user.currentStreak || 0,
+      badges: user.badges,
+      completedVisits: user.completedVisits,
+      completedCalls: user.completedCalls,
     }));
-
-    return leaderboard;
   }
 
   async getDetailedUserStats(organizationId: string, loanOfficerId: string): Promise<{
@@ -2464,23 +2572,63 @@ export class DatabaseStorage implements IStorage {
       break; // Take the first (lowest threshold) locked badge
     }
 
-    // Get current rank
-    const allUsersRanked = await db.select({
+    // Get actual performance data for this user
+    const [userVisitCount] = await db.select({ count: count() })
+      .from(visits)
+      .where(and(
+        eq(visits.organizationId, organizationId),
+        eq(visits.loanOfficerId, loanOfficerId),
+        eq(visits.status, 'completed')
+      ));
+    const userCompletedVisits = userVisitCount?.count || 0;
+
+    const [userCallCount] = await db.select({ count: count() })
+      .from(phoneCalls)
+      .where(and(
+        eq(phoneCalls.organizationId, organizationId),
+        eq(phoneCalls.loanOfficerId, loanOfficerId),
+        eq(phoneCalls.status, 'completed')
+      ));
+    const userCompletedCalls = userCallCount?.count || 0;
+
+    // Calculate performance score for this user
+    const userPerformanceScore = (userCompletedVisits * 10) + (userCompletedCalls * 5);
+
+    // Get all users with their performance scores for ranking
+    const allUsersWithPerformance = await db.select({
       loanOfficerId: users.loanOfficerId,
-      totalPoints: users.totalPoints
+      completedVisits: sql<number>`(
+        SELECT COUNT(*)::int FROM ${visits} 
+        WHERE ${visits.loanOfficerId} = ${users.loanOfficerId}
+        AND ${visits.organizationId} = ${organizationId}
+        AND ${visits.status} = 'completed'
+      )`.as('completedVisits'),
+      completedCalls: sql<number>`(
+        SELECT COUNT(*)::int FROM ${phoneCalls} 
+        WHERE ${phoneCalls.loanOfficerId} = ${users.loanOfficerId}
+        AND ${phoneCalls.organizationId} = ${organizationId}
+        AND ${phoneCalls.status} = 'completed'
+      )`.as('completedCalls')
     })
     .from(users)
-    .where(eq(users.organizationId, organizationId))
-    .orderBy(desc(users.totalPoints));
+    .where(eq(users.organizationId, organizationId));
 
-    const currentRank = allUsersRanked.findIndex(u => u.loanOfficerId === loanOfficerId) + 1;
+    // Sort by performance score
+    const rankedUsers = allUsersWithPerformance
+      .map(u => ({
+        ...u,
+        performanceScore: (u.completedVisits * 10) + (u.completedCalls * 5)
+      }))
+      .sort((a, b) => b.performanceScore - a.performanceScore);
 
-    // Calculate level and points to next level
-    const level = Math.floor((user.totalPoints || 0) / 100) + 1;
-    const pointsToNextLevel = 100 - ((user.totalPoints || 0) % 100);
+    const currentRank = rankedUsers.findIndex(u => u.loanOfficerId === loanOfficerId) + 1;
+
+    // Calculate level and points to next level based on performance score
+    const level = Math.floor(userPerformanceScore / 100) + 1;
+    const pointsToNextLevel = 100 - (userPerformanceScore % 100);
 
     return {
-      totalPoints: user.totalPoints || 0,
+      totalPoints: userPerformanceScore, // Use performance score as displayed points
       currentStreak: user.currentStreak || 0,
       longestStreak: user.longestStreak || 0,
       currentRank: currentRank > 0 ? currentRank : null,
