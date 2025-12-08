@@ -1244,7 +1244,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DEBUG] Clients found for ${loanOfficerId} (isAdmin: ${user.isAdmin}): ${clients.length}`);
       
-      res.json(clients);
+      // Generate reasonPoints on-the-fly for suggestions that don't have them
+      const enhancedClients = clients.map(client => {
+        if (client.actionSuggestions && Array.isArray(client.actionSuggestions)) {
+          const enhancedSuggestions = client.actionSuggestions.map((suggestion: any) => {
+            if (suggestion.reasonPoints && suggestion.reasonPoints.length > 0) {
+              return suggestion; // Already has reasonPoints
+            }
+            
+            // Generate reasonPoints based on client data
+            const reasonPoints: { key: string; severity: 'high' | 'medium' | 'low' | 'good'; params?: Record<string, string | number> }[] = [];
+            const feedbackScore = client.feedbackScore || 3;
+            
+            // Add feedback-based reason
+            if (feedbackScore >= 4) {
+              reasonPoints.push({ key: 'feedback_excellent', severity: 'good', params: { score: feedbackScore.toFixed(1) } });
+            } else if (feedbackScore >= 3) {
+              reasonPoints.push({ key: 'feedback_good', severity: 'low', params: { score: feedbackScore.toFixed(1) } });
+            } else if (feedbackScore >= 2) {
+              reasonPoints.push({ key: 'feedback_fair', severity: 'medium', params: { score: feedbackScore.toFixed(1) } });
+            } else {
+              reasonPoints.push({ key: 'feedback_poor', severity: 'high', params: { score: feedbackScore.toFixed(1) } });
+            }
+            
+            // Add risk-based reason
+            if (client.riskScore >= 70) {
+              reasonPoints.push({ key: 'risk_high', severity: 'high', params: { score: client.riskScore.toFixed(0) } });
+            } else if (client.riskScore >= 50) {
+              reasonPoints.push({ key: 'risk_medium', severity: 'medium', params: { score: client.riskScore.toFixed(0) } });
+            } else if (client.riskScore >= 30) {
+              reasonPoints.push({ key: 'risk_low', severity: 'low', params: { score: client.riskScore.toFixed(0) } });
+            } else {
+              reasonPoints.push({ key: 'risk_minimal', severity: 'good', params: { score: client.riskScore.toFixed(0) } });
+            }
+            
+            // Add late days reason
+            if (client.lateDays > 60) {
+              reasonPoints.push({ key: 'overdue_severe', severity: 'high', params: { days: client.lateDays } });
+            } else if (client.lateDays > 30) {
+              reasonPoints.push({ key: 'overdue_moderate', severity: 'medium', params: { days: client.lateDays } });
+            } else if (client.lateDays > 0) {
+              reasonPoints.push({ key: 'overdue_minor', severity: 'low', params: { days: client.lateDays } });
+            } else {
+              reasonPoints.push({ key: 'payment_current', severity: 'good' });
+            }
+            
+            // Add urgency-based reason
+            const clientUrgency = client.compositeUrgency || 0;
+            if (clientUrgency >= 80) {
+              reasonPoints.push({ key: 'urgency_critical', severity: 'high' });
+            } else if (clientUrgency >= 60) {
+              reasonPoints.push({ key: 'urgency_high', severity: 'medium' });
+            } else if (clientUrgency >= 40) {
+              reasonPoints.push({ key: 'urgency_moderate', severity: 'low' });
+            }
+            
+            // Sort by severity
+            const severityOrder = { high: 0, medium: 1, low: 2, good: 3 };
+            reasonPoints.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+            
+            return { ...suggestion, reasonPoints };
+          });
+          
+          return { ...client, actionSuggestions: enhancedSuggestions };
+        }
+        return client;
+      });
+      
+      res.json(enhancedClients);
     } catch (error) {
       console.error("Error fetching clients:", error);
       res.status(500).json({ message: "Failed to fetch clients" });
@@ -2485,6 +2552,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error(`[ADMIN] Error recalculating scores for officer:`, error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Admin endpoint to regenerate action suggestions for all clients
+  app.post("/api/admin/regenerate-suggestions", requireAuth, requireAdmin, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      
+      console.log(`[ADMIN] Starting action suggestion regeneration for all clients`);
+      
+      // Get all unique loan officers
+      const clients = await storage.getAllClients(organizationId);
+      const loanOfficerIds = [...new Set(clients.map(c => c.loanOfficerId))];
+      
+      console.log(`[ADMIN] Found ${loanOfficerIds.length} loan officers to process`);
+      
+      let totalUpdated = 0;
+      for (const loanOfficerId of loanOfficerIds) {
+        await regenerateActionSuggestions(organizationId, loanOfficerId);
+        const officerClients = clients.filter(c => c.loanOfficerId === loanOfficerId);
+        totalUpdated += officerClients.length;
+      }
+      
+      console.log(`[ADMIN] Successfully regenerated suggestions for ${totalUpdated} clients`);
+      
+      res.json({
+        message: `Successfully regenerated action suggestions`,
+        clientsUpdated: totalUpdated,
+        loanOfficersProcessed: loanOfficerIds.length
+      });
+      
+    } catch (error) {
+      console.error(`[ADMIN] Error regenerating suggestions:`, error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
