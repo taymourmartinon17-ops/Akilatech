@@ -745,12 +745,13 @@
     "daysLeft": "يوم متبقي",
     "levelNumber": "المستوى {{level}}",
     "pointsDisplay": "{{points}} نقطة",
-    "progressDisplay": "{{progress}}/100 للمستوى {{level}}",
-    "streakDays": "{{count}} يوم",
+    "progressDisplay": "{{progress}} من 100 للمستوى {{level}}",
+    "streakDays": "{{count}} أيام",
     "bestStreak": "الأفضل: {{count}}",
-    "remainingCount": "{{count}} متبقي",
-    "daysRemaining": "{{count}} يوم متبقي",
-    "leaderboardEntry": "{{points}} نقطة"
+    "remainingCount": "متبقي {{count}}",
+    "daysRemaining": "متبقي {{count}} يوم",
+    "leaderboardEntry": "{{points}} نقطة",
+    "streakWithFire": "{{points}} نقطة • {{streak}}"
   },
   "notFound": {
     "title": "404 الصفحة غير موجودة",

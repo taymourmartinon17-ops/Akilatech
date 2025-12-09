@@ -251,7 +251,7 @@ export function PerformanceWidget() {
                       {entry.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('incentives.leaderboardEntry', { points: entry.totalPoints })} • {entry.currentStreak}🔥
+                      {t('incentives.streakWithFire', { points: entry.totalPoints, streak: entry.currentStreak })}🔥
                     </p>
                   </div>
                   {entry.badges > 0 && (

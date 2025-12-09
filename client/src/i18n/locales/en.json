@@ -750,7 +750,8 @@
     "bestStreak": "Best: {{count}}",
     "remainingCount": "{{count}} more",
     "daysRemaining": "{{count}} days left",
-    "leaderboardEntry": "{{points}} pts"
+    "leaderboardEntry": "{{points}} pts",
+    "streakWithFire": "{{points}} pts • {{streak}}"
   },
   "notFound": {
     "title": "404 Page Not Found",
