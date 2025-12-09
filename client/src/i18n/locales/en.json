@@ -736,7 +736,21 @@
     "noLeaderboardData": "No leaderboard data available",
     "failedToLoadRules": "Failed to load earning rules",
     "noRulesAvailable": "No earning rules available yet",
-    "pts": "pts"
+    "pts": "pts",
+    "level": "Level",
+    "toLevel": "to Level",
+    "days": "days",
+    "best": "Best",
+    "more": "more",
+    "daysLeft": "days left",
+    "levelNumber": "Level {{level}}",
+    "pointsDisplay": "{{points}} pts",
+    "progressDisplay": "{{progress}}/100 to Level {{level}}",
+    "streakDays": "{{count}} days",
+    "bestStreak": "Best: {{count}}",
+    "remainingCount": "{{count}} more",
+    "daysRemaining": "{{count}} days left",
+    "leaderboardEntry": "{{points}} pts"
   },
   "notFound": {
     "title": "404 Page Not Found",

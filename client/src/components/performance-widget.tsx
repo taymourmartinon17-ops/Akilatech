@@ -102,7 +102,7 @@ export function PerformanceWidget() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Trophy className="h-5 w-5 text-yellow-500" />
-          Your Performance
+          {t('incentives.yourPerformance')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -111,11 +111,11 @@ export function PerformanceWidget() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Award className="h-5 w-5 text-purple-500" />
-              <span className="font-semibold">Level {level}</span>
+              <span className="font-semibold">{t('incentives.levelNumber', { level })}</span>
             </div>
             <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
               <Medal className="h-3 w-3 me-1" />
-              {stats?.totalPoints || 0} pts
+              {t('incentives.pointsDisplay', { points: stats?.totalPoints || 0 })}
             </Badge>
           </div>
           
@@ -128,7 +128,7 @@ export function PerformanceWidget() {
               className="h-3"
             />
             <p className="text-xs text-muted-foreground text-end">
-              {progressToNextLevel}/100 to Level {level + 1}
+              {t('incentives.progressDisplay', { progress: progressToNextLevel, level: level + 1 })}
             </p>
           </div>
         </div>
@@ -143,7 +143,7 @@ export function PerformanceWidget() {
           >
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-yellow-500" />
-              <span className="text-xs font-medium text-muted-foreground">Rank</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('incentives.rank')}</span>
             </div>
             <p className={`text-lg font-bold ${rankTier.color}`}>
               {stats?.currentRank ? `#${stats.currentRank}` : "—"}
@@ -159,13 +159,13 @@ export function PerformanceWidget() {
           >
             <div className="flex items-center gap-2 mb-1">
               <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs font-medium text-muted-foreground">Streak</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('incentives.streak')}</span>
             </div>
             <p className="text-lg font-bold text-orange-600">
-              {stats?.currentStreak || 0} days
+              {t('incentives.streakDays', { count: stats?.currentStreak || 0 })}
             </p>
             <p className="text-xs text-muted-foreground">
-              Best: {stats?.longestStreak || 0}
+              {t('incentives.bestStreak', { count: stats?.longestStreak || 0 })}
             </p>
           </motion.div>
         </div>
@@ -182,7 +182,7 @@ export function PerformanceWidget() {
                 </div>
               </div>
               <Badge variant="outline" className="text-xs">
-                {stats.nextBadge.remaining} more
+                {t('incentives.remainingCount', { count: stats.nextBadge.remaining })}
               </Badge>
             </div>
             <GradientProgress 
@@ -202,7 +202,7 @@ export function PerformanceWidget() {
               <div>
                 <p className="text-xs font-medium">{season.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {season.daysRemaining} days left
+                  {t('incentives.daysRemaining', { count: season.daysRemaining })}
                 </p>
               </div>
             </div>
@@ -213,7 +213,7 @@ export function PerformanceWidget() {
         <div className="space-y-2">
           <h4 className="text-sm font-semibold flex items-center gap-2">
             <Trophy className="h-4 w-4 text-yellow-500" />
-            Top Performers
+            {t('incentives.topPerformers')}
           </h4>
           {leaderboardLoading ? (
             <div className="space-y-2">
@@ -251,7 +251,7 @@ export function PerformanceWidget() {
                       {entry.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.totalPoints} pts • {entry.currentStreak}🔥
+                      {t('incentives.leaderboardEntry', { points: entry.totalPoints })} • {entry.currentStreak}🔥
                     </p>
                   </div>
                   {entry.badges > 0 && (

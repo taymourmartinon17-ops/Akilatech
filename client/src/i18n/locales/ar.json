@@ -736,7 +736,21 @@
     "noLeaderboardData": "لا توجد بيانات لوحة المتصدرين متاحة",
     "failedToLoadRules": "فشل تحميل قواعد الكسب",
     "noRulesAvailable": "لا توجد قواعد كسب متاحة بعد",
-    "pts": "نقطة"
+    "pts": "نقطة",
+    "level": "المستوى",
+    "toLevel": "للمستوى",
+    "days": "يوم",
+    "best": "الأفضل",
+    "more": "المزيد",
+    "daysLeft": "يوم متبقي",
+    "levelNumber": "المستوى {{level}}",
+    "pointsDisplay": "{{points}} نقطة",
+    "progressDisplay": "{{progress}}/100 للمستوى {{level}}",
+    "streakDays": "{{count}} يوم",
+    "bestStreak": "الأفضل: {{count}}",
+    "remainingCount": "{{count}} متبقي",
+    "daysRemaining": "{{count}} يوم متبقي",
+    "leaderboardEntry": "{{points}} نقطة"
   },
   "notFound": {
     "title": "404 الصفحة غير موجودة",
