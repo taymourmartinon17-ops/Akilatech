@@ -100,4 +100,4 @@ localPort = 46235
 externalPort = 4200
 
 [agent]
-integrations = ["javascript_database==1.0.0", "javascript_auth_all_persistance==1.0.0", "javascript_xai==1.0.0"]
+integrations = ["javascript_database:1.0.0", "javascript_auth_all_persistance:1.0.0", "javascript_xai:1.0.0"]
