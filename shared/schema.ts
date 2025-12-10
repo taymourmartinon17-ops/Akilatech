@@ -18,7 +18,8 @@ export const users = pgTable("users", {
   loanOfficerId: text("loan_officer_id").notNull(),
   password: text("password"),
   name: text("name").notNull(),
-  role: text("role").notNull().default("loan_officer"), // "admin", "loan_officer", or "super_admin"
+  role: text("role").notNull().default("loan_officer"), // "admin", "loan_officer", "manager", or "super_admin"
+  managerId: text("manager_id"), // For managers: their manager ID to match clients' managerId
   isAdmin: boolean("is_admin").notNull().default(false), // Kept for backward compatibility
   isSuperAdmin: boolean("is_super_admin").notNull().default(false), // Platform super admin
   
@@ -113,6 +114,8 @@ export const visits = pgTable("visits", {
   status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled
   notes: text("notes"),
   completedAt: timestamp("completed_at"), // Timestamp when visit was marked as completed
+  assignedByUserId: varchar("assigned_by_user_id"), // If assigned by manager, stores their user ID
+  assignedByRole: text("assigned_by_role"), // 'manager', 'loan_officer', 'admin' - who created this visit
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

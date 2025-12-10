@@ -279,6 +279,7 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       organizationId: insertUser.organizationId ?? null, // Ensure null instead of undefined
       role: insertUser.role ?? 'loan_officer', // Ensure role has a default value
+      managerId: insertUser.managerId ?? null, // For managers: their manager ID
       loanOfficerId: normalizeOfficerId(insertUser.loanOfficerId),
       password: hashedPassword,
       id, 
@@ -607,6 +608,8 @@ export class MemStorage implements IStorage {
       status: "scheduled",
       notes: null,
       completedAt: null, // Not completed yet
+      assignedByUserId: null,
+      assignedByRole: null,
       ...insertVisit,
       organizationId: insertVisit.organizationId ?? null, // Ensure null instead of undefined
       id, 
