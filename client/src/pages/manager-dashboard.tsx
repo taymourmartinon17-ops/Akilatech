@@ -71,13 +71,13 @@ export default function ManagerDashboard() {
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'Urgent':
-        return <Badge variant="destructive" data-testid="badge-urgent">{t('urgency.urgent')}</Badge>;
+        return <Badge className="bg-purple-600 hover:bg-purple-700" data-testid="badge-urgent">{t('urgency.urgent')}</Badge>;
       case 'High Urgency':
-        return <Badge className="bg-amber-500 hover:bg-amber-600" data-testid="badge-high">{t('urgency.high')}</Badge>;
+        return <Badge className="bg-indigo-600 hover:bg-indigo-700" data-testid="badge-high">{t('urgency.high')}</Badge>;
       case 'Medium Urgency':
-        return <Badge className="bg-blue-500 hover:bg-blue-600" data-testid="badge-medium">{t('urgency.medium')}</Badge>;
+        return <Badge className="bg-blue-600 hover:bg-blue-700" data-testid="badge-medium">{t('urgency.medium')}</Badge>;
       default:
-        return <Badge className="bg-green-500 hover:bg-green-600" data-testid="badge-low">{t('urgency.low')}</Badge>;
+        return <Badge className="bg-green-600 hover:bg-green-700" data-testid="badge-low">{t('urgency.low')}</Badge>;
     }
   };
 
@@ -158,10 +158,10 @@ export default function ManagerDashboard() {
               <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                 {t('manager.urgentClients')}
               </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertTriangle className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{urgentClients.length}</div>
+              <div className="text-2xl font-bold text-purple-600">{urgentClients.length}</div>
             </CardContent>
           </Card>
         </div>
