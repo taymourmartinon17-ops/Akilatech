@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Database, LogOut, Settings, Users, Calendar, Trophy, Flame, Menu, X } from "lucide-react";
+import { LayoutDashboard, Database, LogOut, Settings, Users, Calendar, Trophy, Flame, Menu, X, UserCheck } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Navigation() {
   const { t } = useTranslation();
-  const { user, logout, changeLoanOfficerId, isAdmin } = useAuth();
+  const { user, logout, changeLoanOfficerId, isAdmin, isManager } = useAuth();
   const [location, setLocation] = useLocation();
   const [officerIdInput, setOfficerIdInput] = useState(user?.loanOfficerId || "");
   const [isEditing, setIsEditing] = useState(false);
@@ -61,6 +61,10 @@ export function Navigation() {
     { path: '/data-sync', icon: Database, label: t('navigation.dataSync'), testId: 'nav-data-sync' },
     { path: '/settings', icon: Settings, label: t('navigation.settings'), testId: 'nav-settings' },
     { path: '/admin/gamification', icon: Trophy, label: t('navigation.gamification'), testId: 'nav-gamification' },
+  ] : isManager ? [
+    { path: '/manager', icon: UserCheck, label: t('navigation.managerDashboard'), testId: 'nav-manager' },
+    { path: '/calendar', icon: Calendar, label: t('navigation.calendar'), testId: 'nav-calendar' },
+    { path: '/incentives', icon: Trophy, label: t('navigation.incentives'), testId: 'nav-incentives' },
   ] : [
     { path: '/dashboard', icon: LayoutDashboard, label: t('navigation.dashboard'), testId: 'nav-dashboard' },
     { path: '/clients', icon: Users, label: t('navigation.clients'), testId: 'nav-clients' },

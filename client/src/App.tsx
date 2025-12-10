@@ -14,10 +14,12 @@ import Incentives from "@/pages/Incentives";
 import AdminGamification from "@/pages/AdminGamification";
 import SuperAdminDashboard from "@/pages/super-admin-dashboard";
 import OrganizationDetail from "@/pages/organization-detail";
+import ManagerDashboard from "@/pages/manager-dashboard";
 import { AuthProvider } from "@/lib/auth";
 import { AdminRoute } from "@/components/admin-route";
 import { SuperAdminRoute } from "@/components/super-admin-route";
 import { LoanOfficerRoute } from "@/components/loan-officer-route";
+import { ManagerRoute } from "@/components/manager-route";
 import { I18nProvider } from "@/lib/i18n-provider";
 import { CelebrationManager } from "@/components/celebration-manager";
 
@@ -49,6 +51,11 @@ function Router() {
         </LoanOfficerRoute>
       </Route>
       <Route path="/calendar" component={CalendarPage} />
+      <Route path="/manager">
+        <ManagerRoute>
+          <ManagerDashboard />
+        </ManagerRoute>
+      </Route>
       <Route path="/incentives" component={Incentives} />
       <Route path="/admin/gamification">
         <AdminRoute>
