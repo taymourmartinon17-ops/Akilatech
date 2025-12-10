@@ -403,6 +403,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First check if user account already exists
       const user = await storage.getUserByLoanOfficerId(organizationId, loanOfficerId);
       
+      // Check if ID exists as a loan officer in client data
+      const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
+      const isLoanOfficer = clientsForOfficer.length > 0;
+      
+      // Check if ID exists as a manager (BM ID) in client data
+      const clientsForManager = await storage.getClientsByManagerId(organizationId, loanOfficerId);
+      const isManager = clientsForManager.length > 0;
+      
       if (user) {
         // User account exists
         return res.json({ 
@@ -410,20 +418,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isRegistered: true,
           loanOfficerId: loanOfficerId,
           needsPasswordSetup: !user.password || user.requiresPasswordSetup,
-          hasPassword: !!user.password && !user.requiresPasswordSetup
+          hasPassword: !!user.password && !user.requiresPasswordSetup,
+          isLoanOfficer: isLoanOfficer,
+          isManager: isManager,
+          currentRole: user.role
         });
       }
       
-      // Check if loan officer ID exists in client data (pre-registered via Excel sync)
-      const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
-      const existsInClientData = clientsForOfficer.length > 0;
+      const existsInData = isLoanOfficer || isManager;
       
       res.json({ 
-        exists: existsInClientData,
+        exists: existsInData,
         isRegistered: false,
         loanOfficerId: loanOfficerId,
-        needsPasswordSetup: existsInClientData, // If in client data, they can set up password
-        hasPassword: false
+        needsPasswordSetup: existsInData,
+        hasPassword: false,
+        isLoanOfficer: isLoanOfficer,
+        isManager: isManager
       });
     } catch (error) {
       console.error("Check user error:", error);
@@ -431,11 +442,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Signup route (with rate limiting) - ONLY for pre-registered loan officer IDs
-  // Loan officer IDs must exist in client data (from Excel sync) before they can set up an account
+  // Signup route (with rate limiting) - ONLY for pre-registered loan officer IDs or manager IDs
+  // IDs must exist in client data (from Excel sync) before they can set up an account
   app.post("/api/auth/signup", authLimiter, async (req, res) => {
     try {
-      const { loanOfficerId, password, name, organizationId } = req.body;
+      const { loanOfficerId, password, name, organizationId, role } = req.body;
       
       if (!loanOfficerId || !password || !name || !organizationId) {
         return res.status(400).json({ message: "Loan Officer ID, password, name, and organization ID are required" });
@@ -445,6 +456,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (loanOfficerId.toUpperCase() === 'ADMIN' || loanOfficerId.toUpperCase() === 'ADMINISTRATOR') {
         return res.status(400).json({ message: "Reserved identifier cannot be used for signup" });
       }
+      
+      // Determine the role and validate it
+      const selectedRole = role === 'manager' ? 'manager' : 'loan_officer';
       
       // Check if user already exists in this organization
       const existingUser = await storage.getUserByLoanOfficerId(organizationId, loanOfficerId);
@@ -457,12 +471,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
+        // Validate role eligibility for existing user
+        if (selectedRole === 'manager') {
+          const clientsForManager = await storage.getClientsByManagerId(organizationId, loanOfficerId);
+          if (clientsForManager.length === 0) {
+            return res.status(403).json({ 
+              message: "This ID is not registered as a Branch Manager in the system." 
+            });
+          }
+        } else {
+          const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
+          if (clientsForOfficer.length === 0) {
+            return res.status(403).json({ 
+              message: "This Loan Officer ID is not registered in the system." 
+            });
+          }
+        }
+        
         // User exists but needs password setup - update their password and name
         await storage.updateUserPassword(existingUser.id, password);
         
-        // Update user name if different
-        if (name && name !== existingUser.name) {
-          await storage.updateUser(existingUser.id, { name });
+        // Update user name and role if different
+        const updates: any = {};
+        if (name && name !== existingUser.name) updates.name = name;
+        if (selectedRole !== existingUser.role) updates.role = selectedRole;
+        if (selectedRole === 'manager') updates.managerId = loanOfficerId;
+        
+        if (Object.keys(updates).length > 0) {
+          await storage.updateUser(existingUser.id, updates);
         }
         
         // Create session
@@ -473,8 +509,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: name || existingUser.name,
           isAdmin: existingUser.isAdmin,
           isSuperAdmin: existingUser.isSuperAdmin,
-          role: (existingUser.role as 'loan_officer' | 'manager' | 'admin' | 'super_admin') || 'loan_officer',
-          managerId: existingUser.managerId
+          role: selectedRole as 'loan_officer' | 'manager' | 'admin' | 'super_admin',
+          managerId: selectedRole === 'manager' ? loanOfficerId : existingUser.managerId
         };
         
         return req.session.save((err) => {
@@ -490,29 +526,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: name || existingUser.name,
               isAdmin: existingUser.isAdmin,
               isSuperAdmin: existingUser.isSuperAdmin,
-              role: existingUser.role || 'loan_officer',
-              managerId: existingUser.managerId
+              role: selectedRole,
+              managerId: selectedRole === 'manager' ? loanOfficerId : existingUser.managerId
             } 
           });
         });
       }
       
-      // User doesn't exist - check if loan officer ID exists in client data
-      const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
-      
-      if (clientsForOfficer.length === 0) {
-        // Loan officer ID not found in client data - reject signup
-        return res.status(403).json({ 
-          message: "This Loan Officer ID is not registered in the system. Please contact your administrator to be added." 
-        });
+      // User doesn't exist - check if ID exists in client data for the selected role
+      if (selectedRole === 'manager') {
+        // For manager role, check if ID exists as a manager ID (BM ID)
+        const clientsForManager = await storage.getClientsByManagerId(organizationId, loanOfficerId);
+        if (clientsForManager.length === 0) {
+          return res.status(403).json({ 
+            message: "This ID is not registered as a Branch Manager in the system. Please contact your administrator." 
+          });
+        }
+      } else {
+        // For loan officer role, check if ID exists as a loan officer ID
+        const clientsForOfficer = await storage.getClientsByLoanOfficer(organizationId, loanOfficerId);
+        if (clientsForOfficer.length === 0) {
+          return res.status(403).json({ 
+            message: "This Loan Officer ID is not registered in the system. Please contact your administrator to be added." 
+          });
+        }
       }
       
-      // Loan officer ID exists in client data - create new user account
+      // ID exists in client data - create new user account
       const user = await storage.createUser({
         loanOfficerId,
         password,
         name,
         organizationId,
+        role: selectedRole,
+        managerId: selectedRole === 'manager' ? loanOfficerId : undefined,
         requiresPasswordSetup: false // Password is being set now
       });
       

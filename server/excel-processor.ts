@@ -240,6 +240,11 @@ function prepareDataVectorized(workbook: XLSX.WorkBook): { data: ProcessedRow[],
       'lo id': 'Loan Officer ID',
       'officer id': 'Loan Officer ID',
       'bm id': 'Manager ID',
+      'bmid': 'Manager ID',
+      'bm_id': 'Manager ID',
+      'branch manager id': 'Manager ID',
+      'manager id': 'Manager ID',
+      'branch manager': 'Manager ID',
       'outstanding': 'OUTSTANDING',
       'outstanding at risk': 'Outstanding at risk',
       'at risk': 'Outstanding at risk',
@@ -299,6 +304,14 @@ function prepareDataVectorized(workbook: XLSX.WorkBook): { data: ProcessedRow[],
 
     // Debug: Log what columns were successfully mapped
     addInfo(`Successfully mapped columns: ${Array.from(mappedColumns).join(', ')}`);
+    
+    // Debug: Check if Manager ID was mapped
+    if (mappedColumns.has('Manager ID')) {
+      const sampleManagerIds = processedData.slice(0, 5).map(row => row['Manager ID']).filter(Boolean);
+      addInfo(`Manager ID column found. Sample values: ${sampleManagerIds.join(', ')}`);
+    } else {
+      addWarning(`Manager ID column (BM ID) not found in Excel. Manager features will not work.`);
+    }
     
     // Check critical columns
     const criticalColumns = ['Client ID', 'Client Name', 'Loan Officer ID'];
@@ -620,6 +633,7 @@ function processClientsVectorized(data: ProcessedRow[], organizationId: string):
       clientId: String(row['Client ID'] || ''),
       name: String(row['Client Name'] || ''),
       loanOfficerId: String(row['Loan Officer ID'] || 'UNKNOWN'),
+      managerId: row['Manager ID'] ? String(row['Manager ID']).trim() : null,
       outstanding: parseFloat(String(row['OUTSTANDING'] || 0)),
       outstandingAtRisk: parseFloat(String(row['Outstanding at risk'] || 0)),
       parPerLoan: parseFloat(String(row['PAR PER LOAN'] || 0)),

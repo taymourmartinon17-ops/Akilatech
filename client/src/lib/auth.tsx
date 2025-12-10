@@ -20,7 +20,7 @@ interface SignupResult {
 interface AuthContextType {
   user: User | null;
   login: (organizationId: string, loanOfficerId: string, password: string, skipRedirect?: boolean) => Promise<{ success: boolean; needsPasswordSetup?: boolean; setupToken?: string; error?: string }>;
-  signup: (organizationId: string, loanOfficerId: string, password: string, name: string) => Promise<SignupResult>;
+  signup: (organizationId: string, loanOfficerId: string, password: string, name: string, role?: 'loan_officer' | 'manager') => Promise<SignupResult>;
   setPassword: (setupToken: string, password: string) => Promise<boolean>;
   logout: () => void;
   changeLoanOfficerId: (newLoanOfficerId: string) => void;
@@ -56,8 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!skipRedirect) {
           setUser(data.user);
           localStorage.setItem('user', JSON.stringify(data.user));
-          // Redirect super admins to super admin panel, others to dashboard
-          setLocation(data.user.isSuperAdmin ? '/super-admin' : '/dashboard');
+          // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /dashboard
+          const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                               data.user.role === 'manager' ? '/manager' : '/dashboard';
+          setLocation(redirectPath);
         }
         return { success: true };
       } else if (response.status === 423) {
@@ -80,12 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (organizationId: string, loanOfficerId: string, password: string, name: string): Promise<SignupResult> => {
+  const signup = async (organizationId: string, loanOfficerId: string, password: string, name: string, role?: 'loan_officer' | 'manager'): Promise<SignupResult> => {
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId, loanOfficerId, password, name }),
+        body: JSON.stringify({ organizationId, loanOfficerId, password, name, role: role || 'loan_officer' }),
         credentials: 'include',
       });
 
@@ -93,8 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect super admins to super admin panel, others to dashboard
-        setLocation(data.user.isSuperAdmin ? '/super-admin' : '/dashboard');
+        // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /dashboard
+        const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                             data.user.role === 'manager' ? '/manager' : '/dashboard';
+        setLocation(redirectPath);
         return { success: true };
       }
       
@@ -129,8 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect super admins to super admin panel, others to dashboard
-        setLocation(data.user.isSuperAdmin ? '/super-admin' : '/dashboard');
+        // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /dashboard
+        const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                             data.user.role === 'manager' ? '/manager' : '/dashboard';
+        setLocation(redirectPath);
         return true;
       }
       return false;

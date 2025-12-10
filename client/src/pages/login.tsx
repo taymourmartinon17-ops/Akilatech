@@ -12,7 +12,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from "lucide-react";
 
-type AuthStep = 'check-id' | 'login' | 'signup' | 'set-password' | 'not-registered';
+type AuthStep = 'check-id' | 'select-role' | 'login' | 'signup' | 'set-password' | 'not-registered';
 
 interface CheckUserResponse {
   exists: boolean;
@@ -20,6 +20,9 @@ interface CheckUserResponse {
   loanOfficerId: string;
   needsPasswordSetup?: boolean;
   hasPassword?: boolean;
+  isLoanOfficer?: boolean;
+  isManager?: boolean;
+  currentRole?: string;
 }
 
 export default function Login() {
@@ -31,6 +34,8 @@ export default function Login() {
   const [name, setName] = useState("");
   const [setupToken, setSetupToken] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'loan_officer' | 'manager'>('loan_officer');
+  const [checkData, setCheckData] = useState<CheckUserResponse | null>(null);
   const { login, signup, setPassword: setUserPassword, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -38,8 +43,10 @@ export default function Login() {
   useEffect(() => {
     if (isAuthLoading) return;
     if (isAuthenticated && user) {
-      // Redirect super admins to super admin panel, others to dashboard
-      setLocation(user.isSuperAdmin ? '/super-admin' : '/dashboard');
+      // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /dashboard
+      const redirectPath = user.isSuperAdmin ? '/super-admin' : 
+                           user.role === 'manager' ? '/manager' : '/dashboard';
+      setLocation(redirectPath);
     }
   }, [isAuthenticated, user, isAuthLoading, setLocation]);
 
@@ -52,12 +59,27 @@ export default function Login() {
     try {
       const response = await fetch(`/api/auth/check/${encodeURIComponent(loanOfficerId.trim())}?organizationId=${encodeURIComponent(organizationId.trim())}`);
       const data: CheckUserResponse = await response.json();
+      setCheckData(data);
       
       if (!data.exists) {
-        // Loan officer ID not found in client data OR user records - cannot proceed
+        // ID not found in client data OR user records - cannot proceed
         setAuthStep('not-registered');
         setIsSubmitting(false);
         return;
+      }
+      
+      // If ID exists as both loan officer and manager, show role selection
+      if (data.isLoanOfficer && data.isManager && !data.isRegistered) {
+        setAuthStep('select-role');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // If only manager, default to manager role
+      if (data.isManager && !data.isLoanOfficer) {
+        setSelectedRole('manager');
+      } else {
+        setSelectedRole('loan_officer');
       }
       
       if (data.isRegistered) {
@@ -80,7 +102,7 @@ export default function Login() {
           setAuthStep('login');
         }
       } else {
-        // Loan officer ID exists in client data but no user account yet - allow signup
+        // ID exists in client data but no user account yet - allow signup
         setAuthStep('signup');
       }
     } catch (error) {
@@ -92,6 +114,11 @@ export default function Login() {
     }
     
     setIsSubmitting(false);
+  };
+  
+  const handleRoleSelection = (role: 'loan_officer' | 'manager') => {
+    setSelectedRole(role);
+    setAuthStep('signup');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -147,7 +174,7 @@ export default function Login() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const result = await signup(organizationId, loanOfficerId, password, name);
+    const result = await signup(organizationId, loanOfficerId, password, name, selectedRole);
     
     if (!result.success) {
       toast({
@@ -246,6 +273,53 @@ export default function Login() {
                 {isSubmitting ? t('auth.checking') : t('common.continue')}
               </Button>
             </form>
+          )}
+
+          {authStep === 'select-role' && (
+            <div className="space-y-4" data-testid="select-role-form">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {t('auth.selectRole', { defaultValue: 'Select Your Role' })}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('auth.selectRoleDescription', { defaultValue: 'Your ID is registered as both a Loan Officer and Branch Manager. Please choose how you want to log in.' })}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="w-full h-auto py-4 flex flex-col items-center gap-2"
+                  variant="outline"
+                  onClick={() => handleRoleSelection('loan_officer')}
+                  data-testid="button-role-officer"
+                >
+                  <i className="fas fa-user-tie text-xl text-primary"></i>
+                  <span className="font-medium">{t('auth.roleLoanOfficer', { defaultValue: 'Loan Officer' })}</span>
+                  <span className="text-xs text-muted-foreground">{t('auth.roleLoanOfficerDesc', { defaultValue: 'Manage your assigned clients' })}</span>
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full h-auto py-4 flex flex-col items-center gap-2"
+                  variant="outline"
+                  onClick={() => handleRoleSelection('manager')}
+                  data-testid="button-role-manager"
+                >
+                  <i className="fas fa-users-cog text-xl text-indigo-600"></i>
+                  <span className="font-medium">{t('auth.roleManager', { defaultValue: 'Branch Manager' })}</span>
+                  <span className="text-xs text-muted-foreground">{t('auth.roleManagerDesc', { defaultValue: 'Oversee branch clients and loan officers' })}</span>
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={handleBack}
+                data-testid="button-back-from-role"
+              >
+                <i className="fas fa-arrow-left me-2"></i>
+                {t('common.back')}
+              </Button>
+            </div>
           )}
 
           {authStep === 'login' && (

@@ -91,7 +91,13 @@
     "waitForSync": "Wait for the next data sync if you were recently added",
     "tryAgain": "Try Again",
     "alreadyHasAccount": "This Loan Officer ID already has an account. Please log in instead.",
-    "notInSystem": "This Loan Officer ID is not registered in the system. Please contact your administrator to be added."
+    "notInSystem": "This Loan Officer ID is not registered in the system. Please contact your administrator to be added.",
+    "selectRole": "Select Your Role",
+    "selectRoleDescription": "Your ID is registered as both a Loan Officer and Branch Manager. Please choose how you want to log in.",
+    "roleLoanOfficer": "Loan Officer",
+    "roleLoanOfficerDesc": "Manage your assigned clients",
+    "roleManager": "Branch Manager",
+    "roleManagerDesc": "Oversee branch clients and loan officers"
   },
   "navigation": {
     "dashboard": "Dashboard",
