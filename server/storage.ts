@@ -26,7 +26,7 @@ export function computeClientDataHash(client: InsertClient): string {
 }
 import { db } from "./db";
 import { users, clients, visits, phoneCalls, dataSync, settings, gamificationRules, gamificationSeasons, gamificationEvents, gamificationBadges, gamificationUserBadges, portfolioSnapshots, organizations, streakHistory } from "@shared/schema";
-import { eq, desc, sql, and, count } from "drizzle-orm";
+import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Utility function to normalize loan officer IDs
@@ -1575,15 +1575,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async bulkUpsertClients(organizationId: string, clientsData: InsertClient[]): Promise<number> {
-    if (clientsData.length === 0) return 0;
-    
-    // Verify all clients belong to the same organization
-    const invalidClients = clientsData.filter(c => c.organizationId !== organizationId);
-    if (invalidClients.length > 0) {
-      console.error(`[BULK UPSERT] ${invalidClients.length} clients have mismatched organizationId`);
-      return 0;
-    }
-    
     const startTime = Date.now();
     console.log(`[BULK UPSERT] Processing ${clientsData.length} clients...`);
     
@@ -1599,6 +1590,45 @@ export class DatabaseStorage implements IStorage {
       hashMap.set(row.clientId, row.dataHash);
     }
     console.log(`[BULK UPSERT] Found ${hashMap.size} existing clients with hashes`);
+    
+    // Delete clients that are NOT in the new uploaded file
+    // The new file is the authoritative source - old clients not in new file should be removed
+    const newClientIds = clientsData.map(c => c.clientId);
+    const existingClientIds = Array.from(hashMap.keys());
+    const clientIdsToDelete = existingClientIds.filter(id => !newClientIds.includes(id));
+    
+    if (clientIdsToDelete.length > 0) {
+      console.log(`[BULK UPSERT] 🗑️ Removing ${clientIdsToDelete.length} clients not in new upload...`);
+      
+      // Delete in batches to avoid parameter limits
+      const DELETE_BATCH_SIZE = 1000;
+      for (let i = 0; i < clientIdsToDelete.length; i += DELETE_BATCH_SIZE) {
+        const batch = clientIdsToDelete.slice(i, i + DELETE_BATCH_SIZE);
+        await db.delete(clients)
+          .where(and(
+            eq(clients.organizationId, organizationId),
+            inArray(clients.clientId, batch)
+          ));
+        console.log(`[BULK UPSERT] Deleted batch ${Math.floor(i/DELETE_BATCH_SIZE) + 1}: ${Math.min(i + DELETE_BATCH_SIZE, clientIdsToDelete.length)}/${clientIdsToDelete.length}`);
+      }
+      console.log(`[BULK UPSERT] ✓ Removed ${clientIdsToDelete.length} old clients`);
+    } else {
+      console.log(`[BULK UPSERT] No clients to remove - all existing clients are in new upload`);
+    }
+    
+    // Handle empty upload - deletion done above, nothing more to do
+    if (clientsData.length === 0) {
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[BULK UPSERT] ✓ Empty upload processed in ${totalTime}s (${clientIdsToDelete.length} clients removed)`);
+      return 0;
+    }
+    
+    // Verify all clients belong to the same organization
+    const invalidClients = clientsData.filter(c => c.organizationId !== organizationId);
+    if (invalidClients.length > 0) {
+      console.error(`[BULK UPSERT] ${invalidClients.length} clients have mismatched organizationId`);
+      return 0;
+    }
     
     // Compute hashes for incoming data and filter to changed clients only
     const clientsWithHashes = clientsData.map(client => ({
