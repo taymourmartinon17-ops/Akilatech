@@ -158,27 +158,32 @@ export default function Incentives() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" data-testid="page-incentives">
       <Navigation />
       
-      {/* Hero Header */}
-      <div className="bg-orange-500 dark:bg-orange-600 shadow-xl">
-        <div className="max-w-7xl mx-auto p-8">
+      {/* Hero Header - Contained style matching Calendar */}
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="bg-orange-500 dark:bg-orange-600 rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
-            <div>
-              <motion.h1 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-4xl font-bold text-white mb-2" 
-                data-testid="title-incentives"
-              >
-                {t('incentives.pageTitle')}
-              </motion.h1>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-orange-50 text-lg"
-              >
-                {t('incentives.heroMessage')}
-              </motion.p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Trophy className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <motion.h2 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-2xl font-bold text-white" 
+                  data-testid="title-incentives"
+                >
+                  {t('incentives.pageTitle')}
+                </motion.h2>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-orange-100 mt-1"
+                >
+                  {t('incentives.heroMessage')}
+                </motion.p>
+              </div>
             </div>
             <motion.div
               animate={{ 
@@ -186,7 +191,7 @@ export default function Incentives() {
                 rotate: [0, 5, -5, 0]
               }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-6xl"
+              className="text-5xl"
             >
               {currentTier.icon}
             </motion.div>
@@ -194,7 +199,7 @@ export default function Incentives() {
         </div>
       </div>
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="px-6 pb-6 max-w-7xl mx-auto space-y-6">
         {/* Row 1: Today's Progress Hero + Streak Tracker */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Progress - Large Hero Card */}
