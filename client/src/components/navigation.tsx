@@ -200,7 +200,7 @@ export function Navigation() {
             <LanguageSwitcher />
             
             {showStreak && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-950/30 dark:to-red-950/30 border border-orange-300 dark:border-orange-700" data-testid="streak-counter">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-950/30 border border-purple-300 dark:border-purple-700" data-testid="streak-counter">
                 <motion.div
                   animate={{
                     scale: [1, 1.2, 1],
@@ -212,9 +212,9 @@ export function Navigation() {
                     repeatType: "reverse"
                   }}
                 >
-                  <Flame className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+                  <Flame className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </motion.div>
-                <span className="text-sm font-bold text-orange-700 dark:text-orange-300" data-testid="streak-count">
+                <span className="text-sm font-bold text-purple-700 dark:text-purple-300" data-testid="streak-count">
                   {currentStreak} {t('gamification.dayStreak')}
                 </span>
               </div>
