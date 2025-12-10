@@ -26,7 +26,7 @@ export function computeClientDataHash(client: InsertClient): string {
 }
 import { db } from "./db";
 import { users, clients, visits, phoneCalls, dataSync, settings, gamificationRules, gamificationSeasons, gamificationEvents, gamificationBadges, gamificationUserBadges, portfolioSnapshots, organizations, streakHistory } from "@shared/schema";
-import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, count, inArray, gte, lte } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Utility function to normalize loan officer IDs
@@ -64,6 +64,12 @@ export interface IStorage {
   bulkUpdateClients(organizationId: string, clients: Client[]): Promise<void>;
   bulkUpsertClients(organizationId: string, clients: InsertClient[]): Promise<number>;
   getUniqueLoanOfficers(organizationId: string): Promise<{ loanOfficerId: string; clientCount: number }[]>;
+  
+  // Manager-scoped methods (for branch managers)
+  getClientsByManagerId(organizationId: string, managerId: string): Promise<Client[]>;
+  getLoanOfficersByManagerId(organizationId: string, managerId: string): Promise<{ loanOfficerId: string; name: string; clientCount: number }[]>;
+  getLoanOfficerAvailability(organizationId: string, loanOfficerId: string, startDate: Date, endDate: Date): Promise<{ visits: Visit[]; phoneCalls: PhoneCall[] }>;
+  getUserByManagerId(organizationId: string, managerId: string): Promise<User | undefined>;
   
   // Visit methods (scoped by organization)
   getVisit(organizationId: string, id: string): Promise<Visit | undefined>;
@@ -571,6 +577,68 @@ export class MemStorage implements IStorage {
       loanOfficerId,
       clientCount
     }));
+  }
+
+  // Manager-scoped methods
+  async getClientsByManagerId(organizationId: string, managerId: string): Promise<Client[]> {
+    return this.ensureFreshClassifications(
+      Array.from(this.clients.values()).filter(
+        client => client.organizationId === organizationId && client.managerId === managerId
+      )
+    );
+  }
+
+  async getLoanOfficersByManagerId(organizationId: string, managerId: string): Promise<{ loanOfficerId: string; name: string; clientCount: number }[]> {
+    // Get all clients for this manager
+    const managerClients = Array.from(this.clients.values()).filter(
+      client => client.organizationId === organizationId && client.managerId === managerId
+    );
+    
+    // Group by loan officer and count
+    const officerStats = new Map<string, number>();
+    for (const client of managerClients) {
+      const count = officerStats.get(client.loanOfficerId) || 0;
+      officerStats.set(client.loanOfficerId, count + 1);
+    }
+    
+    // Get user names for each officer
+    const results: { loanOfficerId: string; name: string; clientCount: number }[] = [];
+    for (const [loanOfficerId, clientCount] of officerStats.entries()) {
+      const user = Array.from(this.users.values()).find(
+        u => u.organizationId === organizationId && u.loanOfficerId === loanOfficerId
+      );
+      results.push({
+        loanOfficerId,
+        name: user?.name || `Loan Officer ${loanOfficerId}`,
+        clientCount
+      });
+    }
+    
+    return results;
+  }
+
+  async getLoanOfficerAvailability(organizationId: string, loanOfficerId: string, startDate: Date, endDate: Date): Promise<{ visits: Visit[]; phoneCalls: PhoneCall[] }> {
+    const visits = Array.from(this.visits.values()).filter(v => 
+      v.organizationId === organizationId &&
+      v.loanOfficerId === loanOfficerId &&
+      v.scheduledDate >= startDate &&
+      v.scheduledDate <= endDate
+    );
+    
+    const calls = Array.from(this.phoneCalls.values()).filter(c => 
+      c.organizationId === organizationId &&
+      c.loanOfficerId === loanOfficerId &&
+      c.scheduledDate >= startDate &&
+      c.scheduledDate <= endDate
+    );
+    
+    return { visits, phoneCalls: calls };
+  }
+
+  async getUserByManagerId(organizationId: string, managerId: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      user => user.organizationId === organizationId && user.managerId === managerId
+    );
   }
 
   async getVisit(organizationId: string, id: string): Promise<Visit | undefined> {
@@ -1758,6 +1826,69 @@ export class DatabaseStorage implements IStorage {
       loanOfficerId: row.loanOfficerId,
       clientCount: Number(row.clientCount)
     }));
+  }
+
+  // Manager-scoped methods
+  async getClientsByManagerId(organizationId: string, managerId: string): Promise<Client[]> {
+    return await db.select().from(clients).where(
+      and(eq(clients.organizationId, organizationId), eq(clients.managerId, managerId))
+    );
+  }
+
+  async getLoanOfficersByManagerId(organizationId: string, managerId: string): Promise<{ loanOfficerId: string; name: string; clientCount: number }[]> {
+    // Get loan officers and their client counts for this manager
+    const result = await db
+      .select({
+        loanOfficerId: clients.loanOfficerId,
+        clientCount: sql<number>`count(*)`.as('clientCount')
+      })
+      .from(clients)
+      .where(and(eq(clients.organizationId, organizationId), eq(clients.managerId, managerId)))
+      .groupBy(clients.loanOfficerId);
+    
+    // Get user names for each officer
+    const officers: { loanOfficerId: string; name: string; clientCount: number }[] = [];
+    for (const row of result) {
+      const [user] = await db.select().from(users).where(
+        and(eq(users.organizationId, organizationId), eq(users.loanOfficerId, row.loanOfficerId))
+      );
+      officers.push({
+        loanOfficerId: row.loanOfficerId,
+        name: user?.name || `Loan Officer ${row.loanOfficerId}`,
+        clientCount: Number(row.clientCount)
+      });
+    }
+    
+    return officers;
+  }
+
+  async getLoanOfficerAvailability(organizationId: string, loanOfficerId: string, startDate: Date, endDate: Date): Promise<{ visits: Visit[]; phoneCalls: PhoneCall[] }> {
+    const officerVisits = await db.select().from(visits).where(
+      and(
+        eq(visits.organizationId, organizationId),
+        eq(visits.loanOfficerId, loanOfficerId),
+        gte(visits.scheduledDate, startDate),
+        lte(visits.scheduledDate, endDate)
+      )
+    );
+    
+    const officerCalls = await db.select().from(phoneCalls).where(
+      and(
+        eq(phoneCalls.organizationId, organizationId),
+        eq(phoneCalls.loanOfficerId, loanOfficerId),
+        gte(phoneCalls.scheduledDate, startDate),
+        lte(phoneCalls.scheduledDate, endDate)
+      )
+    );
+    
+    return { visits: officerVisits, phoneCalls: officerCalls };
+  }
+
+  async getUserByManagerId(organizationId: string, managerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(
+      and(eq(users.organizationId, organizationId), eq(users.managerId, managerId))
+    );
+    return user || undefined;
   }
 
   // Visit methods
