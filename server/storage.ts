@@ -603,7 +603,7 @@ export class MemStorage implements IStorage {
     
     // Get user names for each officer
     const results: { loanOfficerId: string; name: string; clientCount: number }[] = [];
-    for (const [loanOfficerId, clientCount] of officerStats.entries()) {
+    for (const [loanOfficerId, clientCount] of Array.from(officerStats.entries())) {
       const user = Array.from(this.users.values()).find(
         u => u.organizationId === organizationId && u.loanOfficerId === loanOfficerId
       );

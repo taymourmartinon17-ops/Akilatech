@@ -376,6 +376,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
   
+  // Middleware to require manager access
+  const requireManager = (req: any, res: any, next: any) => {
+    if (req.session?.user?.role !== 'manager') {
+      return res.status(403).json({ message: "Manager access required" });
+    }
+    next();
+  };
+  
   // Authentication routes
   
   // Check if loan officer exists (in client data or as a user)
@@ -1547,6 +1555,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching loan officer details:", error);
       res.status(500).json({ message: "Failed to fetch loan officer details" });
+    }
+  });
+
+  // ===== MANAGER ROUTES =====
+  
+  // Get all clients under this manager's branch with AI recommendations
+  app.get("/api/manager/clients", requireAuth, requireManager, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      const managerId = req.session.user.managerId;
+      
+      if (!managerId) {
+        return res.status(400).json({ message: "Manager ID not set for this user" });
+      }
+      
+      const clients = await storage.getClientsByManagerId(organizationId, managerId);
+      
+      // Enrich with AI recommendations (simplified suggestion based on risk/urgency)
+      const enrichedClients = clients.map(client => {
+        const riskScore = client.riskScore ?? 50;
+        const urgency = client.urgencyClassification;
+        
+        let recommendation = 'none';
+        let recommendationReason = '';
+        
+        if (urgency === 'Urgent' || riskScore >= 75) {
+          recommendation = 'visit';
+          recommendationReason = urgency === 'Urgent' 
+            ? 'Client needs urgent attention' 
+            : 'High risk - schedule in-person visit';
+        } else if (urgency === 'High Urgency' || riskScore >= 50) {
+          recommendation = 'call';
+          recommendationReason = 'Moderate risk - phone follow-up recommended';
+        }
+        
+        return {
+          ...client,
+          aiRecommendation: recommendation,
+          aiRecommendationReason: recommendationReason
+        };
+      });
+      
+      res.json(enrichedClients);
+    } catch (error) {
+      console.error("Error fetching manager clients:", error);
+      res.status(500).json({ message: "Failed to fetch branch clients" });
+    }
+  });
+  
+  // Get loan officers under this manager
+  app.get("/api/manager/loan-officers", requireAuth, requireManager, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      const managerId = req.session.user.managerId;
+      
+      if (!managerId) {
+        return res.status(400).json({ message: "Manager ID not set for this user" });
+      }
+      
+      const loanOfficers = await storage.getLoanOfficersByManagerId(organizationId, managerId);
+      res.json(loanOfficers);
+    } catch (error) {
+      console.error("Error fetching manager's loan officers:", error);
+      res.status(500).json({ message: "Failed to fetch loan officers" });
+    }
+  });
+  
+  // Get loan officer availability for scheduling
+  app.get("/api/manager/loan-officers/:loanOfficerId/availability", requireAuth, requireManager, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      const { loanOfficerId } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      if (!loanOfficerId) {
+        return res.status(400).json({ message: "Loan Officer ID is required" });
+      }
+      
+      // Default to next 7 days if not specified
+      const start = startDate ? new Date(startDate as string) : new Date();
+      const end = endDate ? new Date(endDate as string) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
+      const availability = await storage.getLoanOfficerAvailability(organizationId, loanOfficerId, start, end);
+      
+      // Create availability summary by day
+      const dayAvailability: Record<string, { visits: number; calls: number }> = {};
+      
+      for (const visit of availability.visits) {
+        const day = visit.scheduledDate.toISOString().split('T')[0];
+        if (!dayAvailability[day]) dayAvailability[day] = { visits: 0, calls: 0 };
+        dayAvailability[day].visits++;
+      }
+      
+      for (const call of availability.phoneCalls) {
+        const day = call.scheduledDate.toISOString().split('T')[0];
+        if (!dayAvailability[day]) dayAvailability[day] = { visits: 0, calls: 0 };
+        dayAvailability[day].calls++;
+      }
+      
+      res.json({
+        loanOfficerId,
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        scheduledVisits: availability.visits.length,
+        scheduledCalls: availability.phoneCalls.length,
+        dailyBreakdown: dayAvailability
+      });
+    } catch (error) {
+      console.error("Error fetching loan officer availability:", error);
+      res.status(500).json({ message: "Failed to fetch availability" });
+    }
+  });
+  
+  // Assign visit to a loan officer (manager action)
+  app.post("/api/manager/assign-visit", requireAuth, requireManager, requireOrganization, async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const organizationId = req.session.user.organizationId!;
+      const { clientId, loanOfficerId, scheduledDate, notes } = req.body;
+      
+      if (!clientId || !loanOfficerId || !scheduledDate) {
+        return res.status(400).json({ message: "Client ID, Loan Officer ID, and scheduled date are required" });
+      }
+      
+      // Create the visit with assignment tracking
+      const visit = await storage.createVisit({
+        organizationId,
+        loanOfficerId,
+        clientId,
+        scheduledDate: new Date(scheduledDate),
+        status: 'scheduled',
+        notes: notes || null,
+        assignedByUserId: req.session.user.id,
+        assignedByRole: 'manager'
+      });
+      
+      res.json(visit);
+    } catch (error) {
+      console.error("Error assigning visit:", error);
+      res.status(500).json({ message: "Failed to assign visit" });
     }
   });
 
