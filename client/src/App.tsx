@@ -17,6 +17,7 @@ import OrganizationDetail from "@/pages/organization-detail";
 import { AuthProvider } from "@/lib/auth";
 import { AdminRoute } from "@/components/admin-route";
 import { SuperAdminRoute } from "@/components/super-admin-route";
+import { LoanOfficerRoute } from "@/components/loan-officer-route";
 import { I18nProvider } from "@/lib/i18n-provider";
 import { CelebrationManager } from "@/components/celebration-manager";
 
@@ -42,7 +43,11 @@ function Router() {
           <DataSyncPage />
         </AdminRoute>
       </Route>
-      <Route path="/clients" component={ClientList} />
+      <Route path="/clients">
+        <LoanOfficerRoute>
+          <ClientList />
+        </LoanOfficerRoute>
+      </Route>
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/incentives" component={Incentives} />
       <Route path="/admin/gamification">

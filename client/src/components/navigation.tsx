@@ -58,7 +58,6 @@ export function Navigation() {
 
   const navItems = isAdmin ? [
     { path: '/dashboard', icon: LayoutDashboard, label: t('navigation.dashboard'), testId: 'nav-dashboard' },
-    { path: '/clients', icon: Users, label: t('navigation.clients'), testId: 'nav-clients' },
     { path: '/data-sync', icon: Database, label: t('navigation.dataSync'), testId: 'nav-data-sync' },
     { path: '/settings', icon: Settings, label: t('navigation.settings'), testId: 'nav-settings' },
     { path: '/admin/gamification', icon: Trophy, label: t('navigation.gamification'), testId: 'nav-gamification' },
