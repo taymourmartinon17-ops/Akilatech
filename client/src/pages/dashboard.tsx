@@ -313,8 +313,8 @@ export default function Dashboard() {
                       className="p-4 md:p-6 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200" 
                       data-testid={`action-item-${client.clientId}`}
                     >
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-0">
-                        <div className="flex-1">
+                      <div className="flex flex-col gap-4">
+                        <div className="w-full">
                           {/* Mobile: Stacked header with name and badges */}
                           <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
                             <button
@@ -435,8 +435,8 @@ export default function Dashboard() {
                           </div>
                         </div>
                         
-                        {/* Action buttons - Stacked on mobile, row on desktop */}
-                        <div className="flex flex-wrap items-center gap-2 md:ms-4">
+                        {/* Action buttons - Row spanning full width below suggestions */}
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-indigo-100 dark:border-indigo-800/50">
                           {client.actionSuggestions?.filter(suggestion => 
                             suggestion.action === 'call' || suggestion.action === 'visit'
                           ).map((suggestion, idx) => (
