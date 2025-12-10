@@ -14,6 +14,8 @@ declare module 'express-session' {
       name: string;
       isAdmin?: boolean;
       isSuperAdmin?: boolean;
+      role?: 'loan_officer' | 'manager' | 'admin' | 'super_admin';
+      managerId?: string | null;
     };
   }
 }

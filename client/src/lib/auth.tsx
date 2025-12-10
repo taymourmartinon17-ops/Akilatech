@@ -8,6 +8,8 @@ interface User {
   name: string;
   isAdmin: boolean;
   isSuperAdmin?: boolean;
+  role?: 'loan_officer' | 'manager' | 'admin' | 'super_admin';
+  managerId?: string | null;
 }
 
 interface SignupResult {
@@ -25,6 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isManager: boolean;
   isLoading: boolean;
 }
 
@@ -222,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isAdmin: !!user?.isAdmin,
       isSuperAdmin: !!user?.isSuperAdmin,
+      isManager: user?.role === 'manager',
       isLoading,
     }}>
       {children}

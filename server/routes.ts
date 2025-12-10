@@ -472,7 +472,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           loanOfficerId: existingUser.loanOfficerId,
           name: name || existingUser.name,
           isAdmin: existingUser.isAdmin,
-          isSuperAdmin: existingUser.isSuperAdmin
+          isSuperAdmin: existingUser.isSuperAdmin,
+          role: (existingUser.role as 'loan_officer' | 'manager' | 'admin' | 'super_admin') || 'loan_officer',
+          managerId: existingUser.managerId
         };
         
         return req.session.save((err) => {
@@ -487,7 +489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               loanOfficerId: existingUser.loanOfficerId, 
               name: name || existingUser.name,
               isAdmin: existingUser.isAdmin,
-              isSuperAdmin: existingUser.isSuperAdmin
+              isSuperAdmin: existingUser.isSuperAdmin,
+              role: existingUser.role || 'loan_officer',
+              managerId: existingUser.managerId
             } 
           });
         });
@@ -519,7 +523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanOfficerId: user.loanOfficerId,
         name: user.name,
         isAdmin: user.isAdmin,
-        isSuperAdmin: user.isSuperAdmin
+        isSuperAdmin: user.isSuperAdmin,
+        role: (user.role as 'loan_officer' | 'manager' | 'admin' | 'super_admin') || 'loan_officer',
+        managerId: user.managerId
       };
       
       // Explicitly save session to ensure it persists to PostgreSQL store
@@ -535,7 +541,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             loanOfficerId: user.loanOfficerId, 
             name: user.name,
             isAdmin: user.isAdmin,
-            isSuperAdmin: user.isSuperAdmin
+            isSuperAdmin: user.isSuperAdmin,
+            role: user.role || 'loan_officer',
+            managerId: user.managerId
           } 
         });
       });
@@ -606,7 +614,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanOfficerId: user.loanOfficerId,
         name: user.name,
         isAdmin: user.isAdmin,
-        isSuperAdmin: user.isSuperAdmin
+        isSuperAdmin: user.isSuperAdmin,
+        role: (user.role as 'loan_officer' | 'manager' | 'admin' | 'super_admin') || 'loan_officer',
+        managerId: user.managerId
       };
       
       // Update login streak (don't fail login if this fails)
@@ -631,7 +641,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             loanOfficerId: user.loanOfficerId, 
             name: user.name,
             isAdmin: user.isAdmin,
-            isSuperAdmin: user.isSuperAdmin
+            isSuperAdmin: user.isSuperAdmin,
+            role: user.role || 'loan_officer',
+            managerId: user.managerId
           } 
         });
       });
@@ -703,7 +715,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanOfficerId: user.loanOfficerId,
         name: user.name,
         isAdmin: user.isAdmin,
-        isSuperAdmin: true
+        isSuperAdmin: true,
+        role: 'super_admin',
+        managerId: user.managerId
       };
       
       // Update login streak (don't fail login if this fails)
@@ -728,7 +742,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             loanOfficerId: user.loanOfficerId, 
             name: user.name,
             isAdmin: user.isAdmin,
-            isSuperAdmin: true
+            isSuperAdmin: true,
+            role: 'super_admin',
+            managerId: user.managerId
           } 
         });
       });
@@ -783,7 +799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanOfficerId: user.loanOfficerId,
         name: user.name,
         isAdmin: user.isAdmin,
-        isSuperAdmin: user.isSuperAdmin
+        isSuperAdmin: user.isSuperAdmin,
+        role: (user.role as 'loan_officer' | 'manager' | 'admin' | 'super_admin') || 'loan_officer',
+        managerId: user.managerId
       };
       
       // Explicitly save session to ensure it persists to PostgreSQL store
@@ -799,7 +817,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             loanOfficerId: user.loanOfficerId, 
             name: user.name,
             isAdmin: user.isAdmin,
-            isSuperAdmin: user.isSuperAdmin
+            isSuperAdmin: user.isSuperAdmin,
+            role: user.role || 'loan_officer',
+            managerId: user.managerId
           } 
         });
       });
@@ -1684,10 +1704,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const organizationId = req.session.user.organizationId!;
-      const { clientId, loanOfficerId, scheduledDate, notes } = req.body;
+      const { clientId, loanOfficerId, scheduledDate, scheduledTime, notes } = req.body;
       
-      if (!clientId || !loanOfficerId || !scheduledDate) {
-        return res.status(400).json({ message: "Client ID, Loan Officer ID, and scheduled date are required" });
+      if (!clientId || !loanOfficerId || !scheduledDate || !scheduledTime) {
+        return res.status(400).json({ message: "Client ID, Loan Officer ID, scheduled date, and time are required" });
       }
       
       // Create the visit with assignment tracking
@@ -1696,6 +1716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanOfficerId,
         clientId,
         scheduledDate: new Date(scheduledDate),
+        scheduledTime,
         status: 'scheduled',
         notes: notes || null,
         assignedByUserId: req.session.user.id,
@@ -2782,7 +2803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all unique loan officers
       const clients = await storage.getAllClients(organizationId);
-      const loanOfficerIds = [...new Set(clients.map(c => c.loanOfficerId))];
+      const loanOfficerIds = Array.from(new Set(clients.map(c => c.loanOfficerId)));
       
       console.log(`[ADMIN] Found ${loanOfficerIds.length} loan officers to process`);
       
