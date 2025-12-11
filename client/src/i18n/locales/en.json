@@ -244,6 +244,9 @@
   "urgency": {
     "extremelyUrgent": "Extremely Urgent",
     "urgent": "Urgent",
+    "high": "High Priority",
+    "medium": "Medium Priority",
+    "low": "Low Priority",
     "moderatelyUrgent": "Moderately Urgent",
     "lowUrgency": "Low Urgency",
     "immediate": "immediate",
@@ -301,7 +304,17 @@
     "visitAssigned": "Visit Assigned",
     "visitAssignedDescription": "The visit has been successfully assigned to the loan officer",
     "visitAssignError": "Failed to assign visit. Please try again.",
-    "fillRequiredFields": "Please fill in all required fields"
+    "fillRequiredFields": "Please fill in all required fields",
+    "aiRecommendation": "AI Recommendation",
+    "noRecommendation": "No recommendation",
+    "actionType": "Action Type",
+    "visit": "Visit",
+    "call": "Call",
+    "loanOfficerSchedule": "Loan Officer Schedule",
+    "scheduled": "tasks",
+    "free": "Free",
+    "upcomingVisits": "Upcoming Visits",
+    "assignCall": "Assign Call"
   },
   "calendar": {
     "title": "Visit Calendar",

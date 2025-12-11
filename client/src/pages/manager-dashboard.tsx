@@ -8,13 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Users, 
-  Phone, 
-  Calendar, 
-  AlertTriangle, 
   Search,
-  ChevronRight,
-  UserCheck,
-  TrendingUp
+  Calendar,
+  Phone
 } from "lucide-react";
 import { AssignVisitModal } from "@/components/assign-visit-modal";
 
@@ -59,10 +55,6 @@ export default function ManagerDashboard() {
     client.loanOfficerId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const visitRecommendations = clients.filter(c => c.aiRecommendation === 'visit');
-  const callRecommendations = clients.filter(c => c.aiRecommendation === 'call');
-  const urgentClients = clients.filter(c => c.urgencyClassification === 'Urgent');
-
   const handleAssignVisit = (client: ClientWithRecommendation) => {
     setSelectedClient(client);
     setShowAssignModal(true);
@@ -81,15 +73,11 @@ export default function ManagerDashboard() {
     }
   };
 
-  const getRecommendationBadge = (recommendation: string) => {
-    switch (recommendation) {
-      case 'visit':
-        return <Badge className="bg-purple-600 hover:bg-purple-700" data-testid="badge-visit-rec">{t('manager.scheduleVisit')}</Badge>;
-      case 'call':
-        return <Badge className="bg-indigo-500 hover:bg-indigo-600" data-testid="badge-call-rec">{t('manager.scheduleCall')}</Badge>;
-      default:
-        return null;
-    }
+  const getRiskColor = (score: number | null) => {
+    if (score === null) return 'text-slate-500';
+    if (score >= 75) return 'text-purple-600';
+    if (score >= 50) return 'text-amber-600';
+    return 'text-green-600';
   };
 
   if (clientsLoading) {
@@ -114,146 +102,12 @@ export default function ManagerDashboard() {
               {t('manager.welcomeMessage', { name: user?.name })}
             </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card data-testid="card-total-clients">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                {t('manager.totalClients')}
-              </CardTitle>
-              <Users className="h-4 w-4 text-indigo-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{clients.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-loan-officers">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                {t('manager.loanOfficers')}
-              </CardTitle>
-              <UserCheck className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{loanOfficers.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-visit-recommendations">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                {t('manager.visitRecommendations')}
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{visitRecommendations.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-urgent-clients">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                {t('manager.urgentClients')}
-              </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{urgentClients.length}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2" data-testid="card-ai-recommendations">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-indigo-600" />
-                {t('manager.aiRecommendations')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {visitRecommendations.slice(0, 5).map((client) => (
-                  <div 
-                    key={client.id} 
-                    className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800"
-                    data-testid={`card-rec-${client.clientId}`}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900 dark:text-white">{client.clientName}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{client.aiRecommendationReason}</p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleAssignVisit(client)}
-                      className="bg-purple-600 hover:bg-purple-700"
-                      data-testid={`button-assign-${client.clientId}`}
-                    >
-                      <Calendar className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                      {t('manager.assign')}
-                    </Button>
-                  </div>
-                ))}
-                {callRecommendations.slice(0, 3).map((client) => (
-                  <div 
-                    key={client.id} 
-                    className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800"
-                    data-testid={`card-call-rec-${client.clientId}`}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900 dark:text-white">{client.clientName}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{client.aiRecommendationReason}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-indigo-600" />
-                      <span className="text-sm text-indigo-600">{t('manager.callRecommended')}</span>
-                    </div>
-                  </div>
-                ))}
-                {visitRecommendations.length === 0 && callRecommendations.length === 0 && (
-                  <p className="text-center text-slate-500 dark:text-slate-400 py-4">
-                    {t('manager.noRecommendations')}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-loan-officers-list">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-green-600" />
-                {t('manager.teamMembers')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {loanOfficers.map((officer) => (
-                  <div 
-                    key={officer.loanOfficerId} 
-                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                    data-testid={`card-officer-${officer.loanOfficerId}`}
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">{officer.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('manager.clientsCount', { count: officer.clientCount })}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
-                  </div>
-                ))}
-                {loanOfficers.length === 0 && (
-                  <p className="text-center text-slate-500 dark:text-slate-400 py-4">
-                    {t('manager.noOfficers')}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="px-3 py-1">
+              <Users className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {clients.length} {t('manager.totalClients')}
+            </Badge>
+          </div>
         </div>
 
         <Card data-testid="card-all-clients">
@@ -281,12 +135,11 @@ export default function ManagerDashboard() {
                     <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400">{t('manager.loanOfficer')}</th>
                     <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400">{t('manager.riskScore')}</th>
                     <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400">{t('manager.urgency')}</th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400">{t('manager.recommendation')}</th>
                     <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400">{t('manager.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredClients.slice(0, 20).map((client) => (
+                  {filteredClients.map((client) => (
                     <tr 
                       key={client.id} 
                       className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -300,33 +153,30 @@ export default function ManagerDashboard() {
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{client.loanOfficerId}</td>
                       <td className="py-3 px-4">
-                        <span className={`font-medium ${(client.riskScore ?? 0) >= 75 ? 'text-red-600' : (client.riskScore ?? 0) >= 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                        <span className={`font-medium ${getRiskColor(client.riskScore)}`}>
                           {client.riskScore ?? '-'}
                         </span>
                       </td>
                       <td className="py-3 px-4">{getUrgencyBadge(client.urgencyClassification)}</td>
-                      <td className="py-3 px-4">{getRecommendationBadge(client.aiRecommendation)}</td>
                       <td className="py-3 px-4">
-                        {client.aiRecommendation === 'visit' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleAssignVisit(client)}
-                            data-testid={`button-assign-table-${client.clientId}`}
-                          >
-                            {t('manager.assignVisit')}
-                          </Button>
-                        )}
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleAssignVisit(client)}
+                          className="bg-indigo-600 hover:bg-indigo-700"
+                          data-testid={`button-assign-${client.clientId}`}
+                        >
+                          {client.aiRecommendation === 'call' ? (
+                            <Phone className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                          ) : (
+                            <Calendar className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                          )}
+                          {t('manager.assignVisit')}
+                        </Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredClients.length > 20 && (
-                <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4">
-                  {t('manager.showingCount', { shown: 20, total: filteredClients.length })}
-                </p>
-              )}
               {filteredClients.length === 0 && (
                 <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                   {t('manager.noClientsFound')}

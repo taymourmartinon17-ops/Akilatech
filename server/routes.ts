@@ -1730,12 +1730,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dayAvailability[day].calls++;
       }
       
+      // Get client names for visits
+      const visitsWithNames = await Promise.all(availability.visits.map(async (visit) => {
+        const client = await storage.getClientByClientId(organizationId, visit.clientId);
+        return {
+          id: visit.id,
+          clientId: visit.clientId,
+          clientName: client?.name || visit.clientId,
+          scheduledDate: visit.scheduledDate.toISOString().split('T')[0],
+          scheduledTime: visit.scheduledTime || '09:00',
+          status: visit.status
+        };
+      }));
+      
       res.json({
         loanOfficerId,
         startDate: start.toISOString(),
         endDate: end.toISOString(),
         scheduledVisits: availability.visits.length,
         scheduledCalls: availability.phoneCalls.length,
+        visits: visitsWithNames,
         dailyBreakdown: dayAvailability
       });
     } catch (error) {
@@ -1744,20 +1758,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Assign visit to a loan officer (manager action)
+  // Assign visit or call to a loan officer (manager action)
   app.post("/api/manager/assign-visit", requireAuth, requireManager, requireOrganization, async (req, res) => {
     try {
       if (!req.session.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const organizationId = req.session.user.organizationId!;
-      const { clientId, loanOfficerId, scheduledDate, scheduledTime, notes } = req.body;
+      const { clientId, loanOfficerId, scheduledDate, scheduledTime, notes, visitType } = req.body;
       
       if (!clientId || !loanOfficerId || !scheduledDate || !scheduledTime) {
         return res.status(400).json({ message: "Client ID, Loan Officer ID, scheduled date, and time are required" });
       }
       
-      // Create the visit with assignment tracking
+      // If visitType is 'call', create a phone call instead of a visit
+      if (visitType === 'call') {
+        const phoneCall = await storage.createPhoneCall({
+          organizationId,
+          loanOfficerId,
+          clientId,
+          scheduledDate: new Date(scheduledDate),
+          scheduledTime,
+          status: 'scheduled',
+          notes: notes || null,
+        });
+        return res.json({ ...phoneCall, type: 'call' });
+      }
+      
+      // Default: Create a visit with assignment tracking
       const visit = await storage.createVisit({
         organizationId,
         loanOfficerId,
@@ -1770,10 +1798,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assignedByRole: 'manager'
       });
       
-      res.json(visit);
+      res.json({ ...visit, type: 'visit' });
     } catch (error) {
-      console.error("Error assigning visit:", error);
-      res.status(500).json({ message: "Failed to assign visit" });
+      console.error("Error assigning visit/call:", error);
+      res.status(500).json({ message: "Failed to assign" });
     }
   });
 

@@ -244,6 +244,9 @@
   "urgency": {
     "extremelyUrgent": "عاجل للغاية",
     "urgent": "عاجل",
+    "high": "أولوية عالية",
+    "medium": "أولوية متوسطة",
+    "low": "أولوية منخفضة",
     "moderatelyUrgent": "أولوية متوسطة",
     "lowUrgency": "أولوية منخفضة",
     "immediate": "فوري",
@@ -301,7 +304,17 @@
     "visitAssigned": "تم تعيين الزيارة",
     "visitAssignedDescription": "تم تعيين الزيارة بنجاح لمسؤول القرض",
     "visitAssignError": "فشل تعيين الزيارة. يرجى المحاولة مرة أخرى.",
-    "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة"
+    "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة",
+    "aiRecommendation": "توصية الذكاء الاصطناعي",
+    "noRecommendation": "لا توجد توصية",
+    "actionType": "نوع الإجراء",
+    "visit": "زيارة",
+    "call": "مكالمة",
+    "loanOfficerSchedule": "جدول مسؤول القرض",
+    "scheduled": "مهام",
+    "free": "متاح",
+    "upcomingVisits": "الزيارات القادمة",
+    "assignCall": "تعيين مكالمة"
   },
   "calendar": {
     "title": "تقويم الزيارات",
