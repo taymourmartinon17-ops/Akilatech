@@ -10,9 +10,11 @@ import {
   Users, 
   Search,
   Calendar,
-  Phone
+  Phone,
+  LogOut
 } from "lucide-react";
 import { AssignVisitModal } from "@/components/assign-visit-modal";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 interface ClientWithRecommendation {
   id: string;
@@ -36,7 +38,7 @@ interface LoanOfficer {
 
 export default function ManagerDashboard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientWithRecommendation | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -107,6 +109,16 @@ export default function ManagerDashboard() {
               <Users className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {clients.length} {t('manager.totalClients')}
             </Badge>
+            <LanguageSwitcher />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={logout}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t('navigation.logout')}
+            </Button>
           </div>
         </div>
 
