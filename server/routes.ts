@@ -1662,6 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           ...client,
+          clientName: client.name,
           aiRecommendation: recommendation,
           aiRecommendationReason: recommendationReason
         };

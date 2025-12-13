@@ -314,7 +314,16 @@
     "scheduled": "مهام",
     "free": "متاح",
     "upcomingVisits": "الزيارات القادمة",
-    "assignCall": "تعيين مكالمة"
+    "assignCall": "تعيين مكالمة",
+    "clientsTab": "العملاء",
+    "teamPerformanceTab": "أداء الفريق",
+    "allLoanOfficers": "جميع موظفي القروض",
+    "totalLoanOfficers": "إجمالي موظفي القروض",
+    "avgRiskScore": "متوسط درجة المخاطر",
+    "highRiskClients": "العملاء ذوو المخاطر العالية",
+    "loanOfficerOverview": "نظرة عامة على موظفي القروض",
+    "clientCount": "عدد العملاء",
+    "noLoanOfficers": "لم يتم العثور على موظفي قروض"
   },
   "calendar": {
     "title": "تقويم الزيارات",

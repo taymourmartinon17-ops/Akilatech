@@ -314,7 +314,16 @@
     "scheduled": "tasks",
     "free": "Free",
     "upcomingVisits": "Upcoming Visits",
-    "assignCall": "Assign Call"
+    "assignCall": "Assign Call",
+    "clientsTab": "Clients",
+    "teamPerformanceTab": "Team Performance",
+    "allLoanOfficers": "All Loan Officers",
+    "totalLoanOfficers": "Total Loan Officers",
+    "avgRiskScore": "Avg Risk Score",
+    "highRiskClients": "High Risk Clients",
+    "loanOfficerOverview": "Loan Officer Overview",
+    "clientCount": "Client Count",
+    "noLoanOfficers": "No loan officers found"
   },
   "calendar": {
     "title": "Visit Calendar",
