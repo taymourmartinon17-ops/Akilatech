@@ -14,9 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Phone, MapPin, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon, Clock, Phone, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, addDays, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Client {
   id: string;
@@ -63,10 +66,11 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [notes, setNotes] = useState("");
   const [visitType, setVisitType] = useState<'visit' | 'call'>(client.aiRecommendation === 'call' ? 'call' : 'visit');
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data: availability, isLoading: availabilityLoading } = useQuery<AvailabilityData>({
     queryKey: ['/api/manager/loan-officers', client.loanOfficerId, 'availability'],
@@ -113,7 +117,7 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
     assignMutation.mutate({
       clientId: client.clientId,
       loanOfficerId: client.loanOfficerId,
-      scheduledDate,
+      scheduledDate: format(scheduledDate, 'yyyy-MM-dd'),
       scheduledTime,
       notes,
       visitType,
@@ -122,31 +126,12 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
 
   const loanOfficer = loanOfficers.find(o => o.loanOfficerId === client.loanOfficerId);
 
-  const getNextSevenDays = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const date = addDays(new Date(), i);
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const dayName = format(date, 'EEE');
-      const dayBreakdown = availability?.dailyBreakdown?.[dateStr];
-      days.push({
-        date: dateStr,
-        dayName,
-        visits: dayBreakdown?.visits || 0,
-        calls: dayBreakdown?.calls || 0,
-      });
-    }
-    return days;
-  };
-
-  const nextSevenDays = getNextSevenDays();
-
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-[550px]" data-testid="modal-assign-visit">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-indigo-600" />
+            <CalendarIcon className="h-5 w-5 text-indigo-600" />
             {t('manager.assignVisitTitle')}
           </DialogTitle>
         </DialogHeader>
@@ -213,34 +198,34 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
           </div>
 
           <div className="space-y-2">
-            <Label>{t('manager.loanOfficerSchedule')}</Label>
-            {availabilityLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-7 gap-1">
-                {nextSevenDays.map((day) => (
-                  <button
-                    key={day.date}
-                    type="button"
-                    onClick={() => setScheduledDate(day.date)}
-                    className={`p-2 rounded-lg text-center transition-colors ${
-                      scheduledDate === day.date 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                    data-testid={`button-date-${day.date}`}
-                  >
-                    <p className="text-xs font-medium">{day.dayName}</p>
-                    <p className="text-lg font-bold">{format(parseISO(day.date), 'd')}</p>
-                    <p className={`text-xs ${scheduledDate === day.date ? 'text-indigo-100' : 'text-slate-500'}`}>
-                      {day.visits + day.calls > 0 ? `${day.visits + day.calls} ${t('manager.scheduled')}` : t('manager.free')}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
+            <Label>{t('manager.visitDate')}</Label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !scheduledDate && "text-muted-foreground"
+                  )}
+                  data-testid="button-select-date"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {scheduledDate ? format(scheduledDate, "PPP") : t('calendar.selectDate')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={scheduledDate}
+                  onSelect={(date) => {
+                    setScheduledDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {availability && availability.visits && availability.visits.length > 0 && (
