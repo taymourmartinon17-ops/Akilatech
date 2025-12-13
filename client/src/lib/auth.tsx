@@ -56,8 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!skipRedirect) {
           setUser(data.user);
           localStorage.setItem('user', JSON.stringify(data.user));
-          // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /calendar (tasks)
+          // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
           const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                               data.user.isAdmin ? '/dashboard' :
                                data.user.role === 'manager' ? '/manager' : '/calendar';
           setLocation(redirectPath);
         }
@@ -95,8 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /calendar (tasks)
+        // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
         const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                             data.user.isAdmin ? '/dashboard' :
                              data.user.role === 'manager' ? '/manager' : '/calendar';
         setLocation(redirectPath);
         return { success: true };
@@ -133,8 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /calendar (tasks)
+        // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
         const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
+                             data.user.isAdmin ? '/dashboard' :
                              data.user.role === 'manager' ? '/manager' : '/calendar';
         setLocation(redirectPath);
         return true;
