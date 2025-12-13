@@ -415,7 +415,7 @@ export default function Calendar() {
       <Navigation />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-2xl shadow-xl p-6 text-white">
+        <div className="bg-indigo-600 rounded-2xl shadow-xl p-6 text-white">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
