@@ -7,12 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
-import { apiRequest } from "@/lib/queryClient";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, UserCheck, ArrowLeft } from "lucide-react";
 
-type AuthStep = 'check-id' | 'select-role' | 'login' | 'signup' | 'set-password' | 'not-registered';
+type AuthStep = 'select-role-type' | 'check-id' | 'select-role' | 'login' | 'signup' | 'set-password' | 'not-registered';
 
 interface CheckUserResponse {
   exists: boolean;
@@ -27,7 +26,7 @@ interface CheckUserResponse {
 
 export default function Login() {
   const { t } = useTranslation();
-  const [authStep, setAuthStep] = useState<AuthStep>('check-id');
+  const [authStep, setAuthStep] = useState<AuthStep>('select-role-type');
   const [organizationId, setOrganizationId] = useState("");
   const [loanOfficerId, setLoanOfficerId] = useState("");
   const [password, setPasswordValue] = useState("");
@@ -43,12 +42,16 @@ export default function Login() {
   useEffect(() => {
     if (isAuthLoading) return;
     if (isAuthenticated && user) {
-      // Redirect based on role: super admin -> /super-admin, manager -> /manager, others -> /dashboard
       const redirectPath = user.isSuperAdmin ? '/super-admin' : 
                            user.role === 'manager' ? '/manager' : '/dashboard';
       setLocation(redirectPath);
     }
   }, [isAuthenticated, user, isAuthLoading, setLocation]);
+
+  const handleRoleTypeSelection = (roleType: 'loan_officer' | 'manager') => {
+    setSelectedRole(roleType);
+    setAuthStep('check-id');
+  };
 
   const handleCheckLoanOfficerId = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,31 +65,35 @@ export default function Login() {
       setCheckData(data);
       
       if (!data.exists) {
-        // ID not found in client data OR user records - cannot proceed
         setAuthStep('not-registered');
         setIsSubmitting(false);
         return;
       }
       
-      // If ID exists as both loan officer and manager, show role selection
-      if (data.isLoanOfficer && data.isManager && !data.isRegistered) {
-        setAuthStep('select-role');
+      // Validate that the user can use the selected role
+      if (selectedRole === 'manager' && !data.isManager) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.notRegisteredAsManager', { defaultValue: 'This ID is not registered as a Branch Manager.' }),
+          variant: "destructive",
+        });
         setIsSubmitting(false);
         return;
       }
       
-      // If only manager, default to manager role
-      if (data.isManager && !data.isLoanOfficer) {
-        setSelectedRole('manager');
-      } else {
-        setSelectedRole('loan_officer');
+      if (selectedRole === 'loan_officer' && !data.isLoanOfficer) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.notRegisteredAsOfficer', { defaultValue: 'This ID is not registered as a Loan Officer.' }),
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
       
       if (data.isRegistered) {
-        // User account already exists
         if (data.needsPasswordSetup) {
-          // User exists but needs to set password for first time
-          const loginResult = await login(organizationId, loanOfficerId, "", true); // skipRedirect = true
+          const loginResult = await login(organizationId, loanOfficerId, "", true);
           if (loginResult.needsPasswordSetup && loginResult.setupToken) {
             setSetupToken(loginResult.setupToken);
             setAuthStep('set-password');
@@ -98,11 +105,9 @@ export default function Login() {
             });
           }
         } else {
-          // User has password set - go to login
           setAuthStep('login');
         }
       } else {
-        // ID exists in client data but no user account yet - allow signup
         setAuthStep('signup');
       }
     } catch (error) {
@@ -114,11 +119,6 @@ export default function Login() {
     }
     
     setIsSubmitting(false);
-  };
-  
-  const handleRoleSelection = (role: 'loan_officer' | 'manager') => {
-    setSelectedRole(role);
-    setAuthStep('signup');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -194,10 +194,13 @@ export default function Login() {
   };
 
   const handleBack = () => {
-    setAuthStep('check-id');
+    if (authStep === 'check-id') {
+      setAuthStep('select-role-type');
+    } else {
+      setAuthStep('check-id');
+    }
     setPasswordValue("");
     setName("");
-    // Keep organizationId and loanOfficerId so user doesn't have to re-enter
   };
 
   if (isAuthLoading) {
@@ -231,8 +234,58 @@ export default function Login() {
           </div>
         </CardHeader>
         <CardContent className="p-6">
+          {authStep === 'select-role-type' && (
+            <div className="space-y-4" data-testid="select-role-type-form">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {t('auth.howToLogin', { defaultValue: 'How would you like to log in?' })}
+                </h3>
+              </div>
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="w-full h-auto py-5 flex items-center gap-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => handleRoleTypeSelection('loan_officer')}
+                  data-testid="button-login-officer"
+                >
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <UserCheck className="h-6 w-6" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-lg block">{t('auth.roleLoanOfficer', { defaultValue: 'Loan Officer' })}</span>
+                    <span className="text-sm text-indigo-100">{t('auth.roleLoanOfficerDesc', { defaultValue: 'Manage your assigned clients' })}</span>
+                  </div>
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full h-auto py-5 flex items-center gap-4 bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => handleRoleTypeSelection('manager')}
+                  data-testid="button-login-manager"
+                >
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-lg block">{t('auth.roleManager', { defaultValue: 'Branch Manager' })}</span>
+                    <span className="text-sm text-purple-100">{t('auth.roleManagerDesc', { defaultValue: 'Oversee branch clients and loan officers' })}</span>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          )}
+
           {authStep === 'check-id' && (
             <form onSubmit={handleCheckLoanOfficerId} className="space-y-4" data-testid="check-id-form">
+              <div className="text-center mb-4">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedRole === 'manager' 
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' 
+                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                }`}>
+                  {selectedRole === 'manager' ? <Users className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                  {selectedRole === 'manager' ? t('auth.roleManager') : t('auth.roleLoanOfficer')}
+                </div>
+              </div>
               <div>
                 <Label htmlFor="organizationId" className="block text-sm font-medium text-foreground mb-2">
                   {t('auth.organizationId')}
@@ -250,12 +303,12 @@ export default function Login() {
               </div>
               <div>
                 <Label htmlFor="loanOfficerId" className="block text-sm font-medium text-foreground mb-2">
-                  {t('auth.loanOfficerId')}
+                  {selectedRole === 'manager' ? t('auth.managerId', { defaultValue: 'Manager ID' }) : t('auth.loanOfficerId')}
                 </Label>
                 <Input
                   type="text"
                   id="loanOfficerId"
-                  placeholder={t('auth.loanOfficerIdPlaceholder')}
+                  placeholder={selectedRole === 'manager' ? t('auth.managerIdPlaceholder', { defaultValue: 'Enter your Manager ID' }) : t('auth.loanOfficerIdPlaceholder')}
                   value={loanOfficerId}
                   onChange={(e) => setLoanOfficerId(e.target.value)}
                   className="w-full"
@@ -265,12 +318,28 @@ export default function Login() {
               </div>
               <Button
                 type="submit"
-                className="w-full font-medium"
+                className={`w-full font-medium ${selectedRole === 'manager' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                 disabled={isSubmitting || !organizationId.trim() || !loanOfficerId.trim()}
                 data-testid="button-continue"
               >
-                <i className="fas fa-arrow-right me-2"></i>
-                {isSubmitting ? t('auth.checking') : t('common.continue')}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                    {t('auth.checking')}
+                  </>
+                ) : (
+                  t('common.continue')
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={handleBack}
+                data-testid="button-back-to-role"
+              >
+                <ArrowLeft className="h-4 w-4 me-2" />
+                {t('common.back')}
               </Button>
             </form>
           )}
@@ -290,10 +359,13 @@ export default function Login() {
                   type="button"
                   className="w-full h-auto py-4 flex flex-col items-center gap-2"
                   variant="outline"
-                  onClick={() => handleRoleSelection('loan_officer')}
+                  onClick={() => {
+                    setSelectedRole('loan_officer');
+                    setAuthStep('signup');
+                  }}
                   data-testid="button-role-officer"
                 >
-                  <i className="fas fa-user-tie text-xl text-primary"></i>
+                  <UserCheck className="h-6 w-6 text-indigo-600" />
                   <span className="font-medium">{t('auth.roleLoanOfficer', { defaultValue: 'Loan Officer' })}</span>
                   <span className="text-xs text-muted-foreground">{t('auth.roleLoanOfficerDesc', { defaultValue: 'Manage your assigned clients' })}</span>
                 </Button>
@@ -301,10 +373,13 @@ export default function Login() {
                   type="button"
                   className="w-full h-auto py-4 flex flex-col items-center gap-2"
                   variant="outline"
-                  onClick={() => handleRoleSelection('manager')}
+                  onClick={() => {
+                    setSelectedRole('manager');
+                    setAuthStep('signup');
+                  }}
                   data-testid="button-role-manager"
                 >
-                  <i className="fas fa-users-cog text-xl text-indigo-600"></i>
+                  <Users className="h-6 w-6 text-purple-600" />
                   <span className="font-medium">{t('auth.roleManager', { defaultValue: 'Branch Manager' })}</span>
                   <span className="text-xs text-muted-foreground">{t('auth.roleManagerDesc', { defaultValue: 'Oversee branch clients and loan officers' })}</span>
                 </Button>
@@ -316,7 +391,7 @@ export default function Login() {
                 onClick={handleBack}
                 data-testid="button-back-from-role"
               >
-                <i className="fas fa-arrow-left me-2"></i>
+                <ArrowLeft className="h-4 w-4 me-2" />
                 {t('common.back')}
               </Button>
             </div>
@@ -347,12 +422,18 @@ export default function Login() {
               <div className="space-y-2">
                 <Button
                   type="submit"
-                  className="w-full font-medium"
+                  className={`w-full font-medium ${selectedRole === 'manager' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                   disabled={isSubmitting}
                   data-testid="button-sign-in"
                 >
-                  <i className="fas fa-sign-in-alt me-2"></i>
-                  {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                      {t('auth.signingIn')}
+                    </>
+                  ) : (
+                    t('auth.signIn')
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -361,7 +442,7 @@ export default function Login() {
                   onClick={handleBack}
                   data-testid="button-back-to-id"
                 >
-                  <i className="fas fa-arrow-left me-2"></i>
+                  <ArrowLeft className="h-4 w-4 me-2" />
                   {t('common.back')}
                 </Button>
               </div>
@@ -393,12 +474,18 @@ export default function Login() {
               <div className="space-y-2">
                 <Button
                   type="submit"
-                  className="w-full font-medium"
+                  className={`w-full font-medium ${selectedRole === 'manager' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                   disabled={isSubmitting}
                   data-testid="button-set-password"
                 >
-                  <i className="fas fa-key me-2"></i>
-                  {isSubmitting ? t('auth.settingPassword') : t('auth.setPassword')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                      {t('auth.settingPassword')}
+                    </>
+                  ) : (
+                    t('auth.setPassword')
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -407,7 +494,7 @@ export default function Login() {
                   onClick={handleBack}
                   data-testid="button-back-to-id"
                 >
-                  <i className="fas fa-arrow-left me-2"></i>
+                  <ArrowLeft className="h-4 w-4 me-2" />
                   {t('common.back')}
                 </Button>
               </div>
@@ -420,6 +507,14 @@ export default function Login() {
                 <p className="text-sm text-muted-foreground">
                   {t('auth.createAccountFor')} <span className="font-medium text-foreground">{loanOfficerId}</span>
                 </p>
+                <div className={`inline-flex items-center gap-2 px-2 py-1 rounded text-xs font-medium mt-2 ${
+                  selectedRole === 'manager' 
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' 
+                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                }`}>
+                  {selectedRole === 'manager' ? <Users className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                  {selectedRole === 'manager' ? t('auth.roleManager') : t('auth.roleLoanOfficer')}
+                </div>
               </div>
               <div>
                 <Label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
@@ -454,12 +549,18 @@ export default function Login() {
               <div className="space-y-2">
                 <Button
                   type="submit"
-                  className="w-full font-medium"
+                  className={`w-full font-medium ${selectedRole === 'manager' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                   disabled={isSubmitting}
                   data-testid="button-create-account"
                 >
-                  <i className="fas fa-user-plus me-2"></i>
-                  {isSubmitting ? t('auth.creatingAccount') : t('auth.createAccount')}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                      {t('auth.creatingAccount')}
+                    </>
+                  ) : (
+                    t('auth.createAccount')
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -468,7 +569,7 @@ export default function Login() {
                   onClick={handleBack}
                   data-testid="button-back-to-id"
                 >
-                  <i className="fas fa-arrow-left me-2"></i>
+                  <ArrowLeft className="h-4 w-4 me-2" />
                   {t('common.back')}
                 </Button>
               </div>
@@ -482,10 +583,14 @@ export default function Login() {
                   <i className="fas fa-exclamation-triangle text-xl text-destructive"></i>
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {t('auth.notRegisteredTitle', { defaultValue: 'Loan Officer ID Not Found' })}
+                  {selectedRole === 'manager' 
+                    ? t('auth.notRegisteredManagerTitle', { defaultValue: 'Manager ID Not Found' })
+                    : t('auth.notRegisteredTitle', { defaultValue: 'Loan Officer ID Not Found' })}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('auth.notRegisteredMessage', { defaultValue: 'The Loan Officer ID you entered is not registered in the system.' })}
+                  {selectedRole === 'manager'
+                    ? t('auth.notRegisteredManagerMessage', { defaultValue: 'The Manager ID you entered is not registered in the system.' })
+                    : t('auth.notRegisteredMessage', { defaultValue: 'The Loan Officer ID you entered is not registered in the system.' })}
                 </p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
@@ -493,7 +598,7 @@ export default function Login() {
                   {t('auth.whatToDo', { defaultValue: 'What you can do:' })}
                 </p>
                 <ul className="list-disc list-inside space-y-1 ms-2">
-                  <li>{t('auth.checkIdTypo', { defaultValue: 'Check if you typed your Loan Officer ID correctly' })}</li>
+                  <li>{t('auth.checkIdTypo', { defaultValue: 'Check if you typed your ID correctly' })}</li>
                   <li>{t('auth.contactAdmin', { defaultValue: 'Contact your administrator to be added to the system' })}</li>
                   <li>{t('auth.waitForSync', { defaultValue: 'Wait for the next data sync if you were recently added' })}</li>
                 </ul>
@@ -505,7 +610,7 @@ export default function Login() {
                 onClick={handleBack}
                 data-testid="button-try-again"
               >
-                <i className="fas fa-arrow-left me-2"></i>
+                <ArrowLeft className="h-4 w-4 me-2" />
                 {t('auth.tryAgain', { defaultValue: 'Try Again' })}
               </Button>
             </div>
