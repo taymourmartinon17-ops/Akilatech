@@ -299,6 +299,7 @@
     "scheduledActivities": "{{visits}} visits and {{calls}} calls scheduled",
     "visitDate": "Visit Date",
     "visitTime": "Visit Time",
+    "selectDateFirst": "Select a date to see availability",
     "notes": "Notes",
     "notesPlaceholder": "Add any notes for this visit...",
     "visitAssigned": "Visit Assigned",

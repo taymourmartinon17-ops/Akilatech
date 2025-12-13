@@ -299,6 +299,7 @@
     "scheduledActivities": "{{visits}} زيارات و {{calls}} مكالمات مجدولة",
     "visitDate": "تاريخ الزيارة",
     "visitTime": "وقت الزيارة",
+    "selectDateFirst": "اختر تاريخًا لرؤية التوافر",
     "notes": "ملاحظات",
     "notesPlaceholder": "أضف أي ملاحظات لهذه الزيارة...",
     "visitAssigned": "تم تعيين الزيارة",

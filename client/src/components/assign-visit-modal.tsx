@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, Clock, Phone, MapPin, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarIcon, Clock, Phone, MapPin, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
   const queryClient = useQueryClient();
   
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
-  const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [notes, setNotes] = useState("");
   const [visitType, setVisitType] = useState<'visit' | 'call'>(client.aiRecommendation === 'call' ? 'call' : 'visit');
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -125,6 +125,41 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
   };
 
   const loanOfficer = loanOfficers.find(o => o.loanOfficerId === client.loanOfficerId);
+
+  const generateTimeSlots = () => {
+    const slots: { time: string; label: string; isBusy: boolean; busyWith?: string }[] = [];
+    for (let hour = 8; hour <= 17; hour++) {
+      for (const minute of [0, 30]) {
+        if (hour === 17 && minute === 30) continue;
+        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const label = `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+        
+        let isBusy = false;
+        let busyWith: string | undefined;
+        
+        if (scheduledDate && availability?.visits) {
+          const selectedDateStr = format(scheduledDate, 'yyyy-MM-dd');
+          const conflictingVisit = availability.visits.find((v) => {
+            const visitDateStr = v.scheduledDate.includes('T') 
+              ? v.scheduledDate.split('T')[0]
+              : v.scheduledDate;
+            return visitDateStr === selectedDateStr && v.scheduledTime === time24;
+          });
+          if (conflictingVisit) {
+            isBusy = true;
+            busyWith = conflictingVisit.clientName;
+          }
+        }
+        
+        slots.push({ time: time24, label, isBusy, busyWith });
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
 
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
@@ -220,6 +255,7 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
                   selected={scheduledDate}
                   onSelect={(date) => {
                     setScheduledDate(date);
+                    setScheduledTime("");
                     setCalendarOpen(false);
                   }}
                   initialFocus
@@ -248,18 +284,44 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="time">{t('manager.visitTime')}</Label>
-            <div className="relative">
-              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                id="time"
-                type="time"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="pl-10"
-                data-testid="input-time"
-              />
-            </div>
+            <Label>{t('manager.visitTime')}</Label>
+            <Select 
+              value={scheduledTime} 
+              onValueChange={setScheduledTime}
+              disabled={!scheduledDate}
+            >
+              <SelectTrigger className="w-full" data-testid="select-time">
+                <Clock className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder={scheduledDate ? t('calendar.selectTime') : t('manager.selectDateFirst')} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {timeSlots.map((slot) => (
+                  <SelectItem 
+                    key={slot.time} 
+                    value={slot.time}
+                    className={cn(
+                      slot.isBusy && "text-orange-600 dark:text-orange-400"
+                    )}
+                  >
+                    <div className="flex items-center justify-between w-full gap-3">
+                      <span className="flex items-center gap-2">
+                        {slot.isBusy ? (
+                          <AlertCircle className="h-3.5 w-3.5 text-orange-500" />
+                        ) : (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                        )}
+                        {slot.label}
+                      </span>
+                      {slot.isBusy && slot.busyWith && (
+                        <span className="text-xs text-orange-500 truncate max-w-[120px]">
+                          {slot.busyWith}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -280,7 +342,7 @@ export function AssignVisitModal({ client, loanOfficers, onClose }: AssignVisitM
             </Button>
             <Button 
               type="submit" 
-              disabled={assignMutation.isPending || !scheduledDate}
+              disabled={assignMutation.isPending || !scheduledDate || !scheduledTime}
               className="bg-indigo-600 hover:bg-indigo-700"
               data-testid="button-submit"
             >
