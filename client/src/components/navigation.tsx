@@ -66,9 +66,9 @@ export function Navigation() {
     { path: '/calendar', icon: Calendar, label: t('navigation.calendar'), testId: 'nav-calendar' },
     { path: '/incentives', icon: Trophy, label: t('navigation.incentives'), testId: 'nav-incentives' },
   ] : [
+    { path: '/calendar', icon: Calendar, label: t('navigation.calendar'), testId: 'nav-calendar' },
     { path: '/dashboard', icon: LayoutDashboard, label: t('navigation.dashboard'), testId: 'nav-dashboard' },
     { path: '/clients', icon: Users, label: t('navigation.clients'), testId: 'nav-clients' },
-    { path: '/calendar', icon: Calendar, label: t('navigation.calendar'), testId: 'nav-calendar' },
     { path: '/incentives', icon: Trophy, label: t('navigation.incentives'), testId: 'nav-incentives' },
   ];
 
