@@ -56,10 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!skipRedirect) {
           setUser(data.user);
           localStorage.setItem('user', JSON.stringify(data.user));
-          // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
+          // Redirect based on role: super admin -> /super-admin, loan officers -> /calendar, manager -> /manager, admin -> /dashboard
           const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
-                               data.user.isAdmin ? '/dashboard' :
-                               data.user.role === 'manager' ? '/manager' : '/calendar';
+                               data.user.role === 'loan_officer' ? '/calendar' :
+                               data.user.role === 'manager' ? '/manager' :
+                               data.user.isAdmin ? '/dashboard' : '/calendar';
           setLocation(redirectPath);
         }
         return { success: true };
@@ -96,10 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
+        // Redirect based on role: super admin -> /super-admin, loan officers -> /calendar, manager -> /manager, admin -> /dashboard
         const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
-                             data.user.isAdmin ? '/dashboard' :
-                             data.user.role === 'manager' ? '/manager' : '/calendar';
+                             data.user.role === 'loan_officer' ? '/calendar' :
+                             data.user.role === 'manager' ? '/manager' :
+                             data.user.isAdmin ? '/dashboard' : '/calendar';
         setLocation(redirectPath);
         return { success: true };
       }
@@ -135,10 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        // Redirect based on role: super admin -> /super-admin, admin -> /dashboard, manager -> /manager, loan officers -> /calendar
+        // Redirect based on role: super admin -> /super-admin, loan officers -> /calendar, manager -> /manager, admin -> /dashboard
         const redirectPath = data.user.isSuperAdmin ? '/super-admin' : 
-                             data.user.isAdmin ? '/dashboard' :
-                             data.user.role === 'manager' ? '/manager' : '/calendar';
+                             data.user.role === 'loan_officer' ? '/calendar' :
+                             data.user.role === 'manager' ? '/manager' :
+                             data.user.isAdmin ? '/dashboard' : '/calendar';
         setLocation(redirectPath);
         return true;
       }
