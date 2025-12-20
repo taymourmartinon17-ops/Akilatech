@@ -23,6 +23,10 @@ The system integrates **Python-based machine learning** using **Scikit-learn** (
 ### Authentication and Authorization
 The application uses **session-based authentication** with **PostgreSQL-backed sessions (connect-pg-simple)**. It features secure login with bcrypt hashing, secure cookies, and session persistence. Client data is filtered based on the authenticated loan officer, and all protected routes have authentication checks. Rate limiting is implemented for authentication, file uploads, and general API requests. Loan Officer IDs must exist in client data before account creation, and only one account per ID is permitted per organization. WebSocket connections require valid session cookies for multi-tenant isolation.
 
+**Route Protection**: A unified `ProtectedRoute` component (`client/src/components/protected-route.tsx`) handles all role-based access control. It accepts `allowedRoles` prop with values: 'super_admin', 'admin', 'manager', 'loan_officer'. Super admins have access to all routes except loan_officer-only routes.
+
+**Organization Management**: Organizations are created via `storage.ensureOrganization(id, name)` which is idempotent (returns existing org or creates new one). This pattern is used in server startup and seed scripts.
+
 ### External Service Integrations
 The system integrates with **Microsoft cloud services** for data sourcing, specifically for **Excel file processing from OneDrive/SharePoint** with a 30-minute scheduled sync. File uploads include security measures like size limits, MIME type validation, and filename sanitization. Robust error handling and sync status tracking are also included.
 
