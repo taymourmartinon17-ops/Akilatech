@@ -12,8 +12,8 @@ i18n
       en: { translation: enTranslations },
       ar: { translation: arTranslations }
     },
-    fallbackLng: 'ar', // Default to Arabic
-    lng: 'ar', // Start with Arabic
+    fallbackLng: 'en', // Default to English
+    lng: 'en', // Start with English
     interpolation: {
       escapeValue: false
     },
