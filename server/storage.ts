@@ -223,6 +223,7 @@ export interface IStorage {
   getLatestSnapshot(organizationId: string, loanOfficerId: string): Promise<import("@shared/schema").PortfolioSnapshot | undefined>;
   
   // Organization methods (super admin only)
+  ensureOrganization(id: string, name: string, adminUserId?: string | null): Promise<{ id: string; name: string; adminUserId: string | null }>;
   getUserCountByOrganization(organizationId: string): Promise<number>;
   deleteOrganization(organizationId: string): Promise<boolean>;
   
@@ -1412,6 +1413,10 @@ export class MemStorage implements IStorage {
 
   async getLatestSnapshot(organizationId: string, loanOfficerId: string): Promise<PortfolioSnapshot | undefined> {
     throw new Error("Portfolio snapshots not supported in MemStorage - use DatabaseStorage");
+  }
+
+  async ensureOrganization(id: string, name: string, adminUserId?: string | null): Promise<{ id: string; name: string; adminUserId: string | null }> {
+    throw new Error("Organization management not supported in MemStorage - use DatabaseStorage");
   }
 
   async getUserCountByOrganization(organizationId: string): Promise<number> {
@@ -2879,6 +2884,20 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(portfolioSnapshots.snapshotDate))
       .limit(1);
     return snapshot;
+  }
+
+  async ensureOrganization(id: string, name: string, adminUserId?: string | null): Promise<{ id: string; name: string; adminUserId: string | null }> {
+    const [existing] = await db.select().from(organizations).where(eq(organizations.id, id));
+    if (existing) {
+      return existing;
+    }
+    const [created] = await db.insert(organizations).values({
+      id,
+      name,
+      adminUserId: adminUserId ?? null
+    }).returning();
+    console.log(`[STORAGE] Created organization: ${name} (${id})`);
+    return created;
   }
 
   async getUserCountByOrganization(organizationId: string): Promise<number> {

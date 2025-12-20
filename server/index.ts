@@ -127,27 +127,17 @@ app.use((req, res, next) => {
   try {
     console.log('[STARTUP] Initializing organization and admin user...');
     const { storage } = await import('./storage.js');
-    const { db } = await import('./db.js');
-    const { organizations } = await import('../shared/schema.js');
     
     // Step 1: Ensure organizations "mfw" and "AKILA" exist (safe - won't duplicate)
     try {
-      await db.insert(organizations).values({
-        id: 'mfw',
-        name: 'MFW Organization',
-        adminUserId: null
-      }).onConflictDoNothing();
+      await storage.ensureOrganization('mfw', 'MFW Organization');
       console.log('[STARTUP] Organization "mfw" initialized');
     } catch (orgError: any) {
       console.error('[STARTUP ERROR] Could not create organization mfw:', orgError?.message || orgError);
     }
     
     try {
-      await db.insert(organizations).values({
-        id: 'AKILA',
-        name: 'AKILA Organization',
-        adminUserId: null
-      }).onConflictDoNothing();
+      await storage.ensureOrganization('AKILA', 'AKILA Organization');
       console.log('[STARTUP] Organization "AKILA" initialized');
     } catch (orgError: any) {
       console.error('[STARTUP ERROR] Could not create organization AKILA:', orgError?.message || orgError);
@@ -190,9 +180,9 @@ app.use((req, res, next) => {
     // Step 3: Migrate any existing super admin with null org, then ensure AKILA super admin exists
     try {
       // First, check for legacy super admin with null organizationId (query DB directly)
-      const { sql } = await import('drizzle-orm');
+      const { sql, eq, and, isNull } = await import('drizzle-orm');
       const { users } = await import('../shared/schema.js');
-      const { eq, and, isNull } = await import('drizzle-orm');
+      const { db } = await import('./db.js');
       
       const legacySuperAdmins = await db.select().from(users).where(
         and(isNull(users.organizationId), eq(users.isSuperAdmin, true))

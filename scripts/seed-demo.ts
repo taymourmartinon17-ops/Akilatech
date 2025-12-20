@@ -1,6 +1,4 @@
 import { storage } from '../server/storage.js';
-import { db } from '../server/db.js';
-import { organizations } from '../shared/schema.js';
 
 const DEMO_ORG_ID = 'demo';
 const DEMO_ORG_NAME = 'Demo Microfinance';
@@ -488,11 +486,7 @@ async function seedDemoData() {
     // Step 1: Create or get demo organization
     console.log('📁 Setting up demo organization...');
     try {
-      await db.insert(organizations).values({
-        id: DEMO_ORG_ID,
-        name: DEMO_ORG_NAME,
-        adminUserId: null
-      }).onConflictDoNothing();
+      await storage.ensureOrganization(DEMO_ORG_ID, DEMO_ORG_NAME);
       console.log(`   ✅ Organization initialized: ${DEMO_ORG_NAME} (${DEMO_ORG_ID})`);
     } catch (orgError: any) {
       console.log(`   ℹ️  Organization may already exist: ${orgError?.message || 'unknown error'}`);

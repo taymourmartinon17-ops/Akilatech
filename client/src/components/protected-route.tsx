@@ -18,18 +18,25 @@ export function ProtectedRoute({ children, allowedRoles, redirectTo = '/dashboar
   const hasAccess = (): boolean => {
     if (!isAuthenticated) return false;
     
+    // Super admins have access to all routes except loan_officer-only routes
+    if (isSuperAdmin && !allowedRoles.every(r => r === 'loan_officer')) {
+      return true;
+    }
+    
     for (const role of allowedRoles) {
       switch (role) {
         case 'super_admin':
           if (isSuperAdmin) return true;
           break;
         case 'admin':
-          if (isAdmin) return true;
+          // Admins and super admins can access admin routes
+          if (isAdmin || isSuperAdmin) return true;
           break;
         case 'manager':
           if (isManager) return true;
           break;
         case 'loan_officer':
+          // Loan officer only - explicitly exclude admins and super admins
           if (user?.role === 'loan_officer' || (!isAdmin && !isSuperAdmin && !isManager)) return true;
           break;
       }
