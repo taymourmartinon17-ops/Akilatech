@@ -16,10 +16,7 @@ import SuperAdminDashboard from "@/pages/super-admin-dashboard";
 import OrganizationDetail from "@/pages/organization-detail";
 import ManagerDashboard from "@/pages/manager-dashboard";
 import { AuthProvider } from "@/lib/auth";
-import { AdminRoute } from "@/components/admin-route";
-import { SuperAdminRoute } from "@/components/super-admin-route";
-import { LoanOfficerRoute } from "@/components/loan-officer-route";
-import { ManagerRoute } from "@/components/manager-route";
+import { ProtectedRoute } from "@/components/protected-route";
 import { I18nProvider } from "@/lib/i18n-provider";
 import { CelebrationManager } from "@/components/celebration-manager";
 
@@ -29,43 +26,43 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/" component={Login} />
       <Route path="/super-admin/organization/:orgId">
-        <SuperAdminRoute>
+        <ProtectedRoute allowedRoles={['super_admin']}>
           <OrganizationDetail />
-        </SuperAdminRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/super-admin">
-        <SuperAdminRoute>
+        <ProtectedRoute allowedRoles={['super_admin']}>
           <SuperAdminDashboard />
-        </SuperAdminRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/officer/:loanOfficerId" component={Dashboard} />
       <Route path="/data-sync">
-        <AdminRoute>
+        <ProtectedRoute allowedRoles={['admin']}>
           <DataSyncPage />
-        </AdminRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/clients">
-        <LoanOfficerRoute>
+        <ProtectedRoute allowedRoles={['loan_officer']}>
           <ClientList />
-        </LoanOfficerRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/manager">
-        <ManagerRoute>
+        <ProtectedRoute allowedRoles={['manager']}>
           <ManagerDashboard />
-        </ManagerRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/incentives" component={Incentives} />
       <Route path="/admin/gamification">
-        <AdminRoute>
+        <ProtectedRoute allowedRoles={['admin']}>
           <AdminGamification />
-        </AdminRoute>
+        </ProtectedRoute>
       </Route>
       <Route path="/settings">
-        <AdminRoute>
+        <ProtectedRoute allowedRoles={['admin']}>
           <SettingsPage />
-        </AdminRoute>
+        </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
     </Switch>

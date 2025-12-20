@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { Navigation } from "@/components/navigation";
-import { AdminRoute } from "@/components/admin-route";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1377,9 +1376,5 @@ function AdminGamificationContent() {
 }
 
 export default function AdminGamification() {
-  return (
-    <AdminRoute>
-      <AdminGamificationContent />
-    </AdminRoute>
-  );
+  return <AdminGamificationContent />;
 }
