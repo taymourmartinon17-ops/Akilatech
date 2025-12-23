@@ -618,8 +618,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Demo organization allows password-free login (only when DEMO_MODE is enabled)
-      const isDemoOrg = organizationId.toLowerCase() === 'demo' && process.env.DEMO_MODE === 'true';
+      // Demo organization always allows password-free login
+      const isDemoOrg = organizationId.toLowerCase() === 'demo';
       
       // Check if user needs to set up password for the first time
       // Only trigger setup flow if no password is submitted (empty string or missing)
