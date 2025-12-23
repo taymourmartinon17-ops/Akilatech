@@ -41,3 +41,8 @@ externalPort = 80
 
 [agent]
 integrations = ["javascript_database:1.0.0", "javascript_auth_all_persistance:1.0.0", "javascript_xai:1.0.0"]
+
+[userenv]
+
+[userenv.development]
+DEMO_MODE = "true"

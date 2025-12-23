@@ -38,41 +38,41 @@ interface DemoClient {
 
 const demoUsers: DemoUser[] = [
   {
-    loanOfficerId: 'MGR001',
+    loanOfficerId: 'manager',
     name: 'Sarah Johnson',
-    password: 'demo123',
+    password: '',
     role: 'manager',
     isAdmin: false,
-    managerId: 'MGR001',
+    managerId: 'manager',
   },
   {
-    loanOfficerId: 'LO001',
+    loanOfficerId: '001',
     name: 'Ahmed Hassan',
-    password: 'demo123',
+    password: '',
     role: 'loan_officer',
     isAdmin: false,
-    managerId: 'MGR001',
+    managerId: 'manager',
   },
   {
-    loanOfficerId: 'LO002',
+    loanOfficerId: '002',
     name: 'Maria Garcia',
-    password: 'demo123',
+    password: '',
     role: 'loan_officer',
     isAdmin: false,
-    managerId: 'MGR001',
+    managerId: 'manager',
   },
   {
-    loanOfficerId: 'LO003',
+    loanOfficerId: '003',
     name: 'David Chen',
-    password: 'demo123',
+    password: '',
     role: 'loan_officer',
     isAdmin: false,
-    managerId: 'MGR001',
+    managerId: 'manager',
   },
   {
-    loanOfficerId: 'ADMIN',
+    loanOfficerId: 'admin',
     name: 'Demo Administrator',
-    password: 'admin123',
+    password: '',
     role: 'admin',
     isAdmin: true,
   },
@@ -83,8 +83,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C001',
     name: 'Ahmad Al-Rashid',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 15000,
     outstandingAtRisk: 12000,
     parPerLoan: 0.85,
@@ -105,8 +105,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C002',
     name: 'Fatima Osman',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 22000,
     outstandingAtRisk: 18000,
     parPerLoan: 0.78,
@@ -126,8 +126,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C003',
     name: 'Mohammed Khalil',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 8500,
     outstandingAtRisk: 8500,
     parPerLoan: 1.0,
@@ -150,8 +150,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C004',
     name: 'Layla Mahmoud',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 12000,
     outstandingAtRisk: 6000,
     parPerLoan: 0.5,
@@ -172,8 +172,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C005',
     name: 'Omar Abdullah',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 18000,
     outstandingAtRisk: 9000,
     parPerLoan: 0.55,
@@ -194,8 +194,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C006',
     name: 'Nadia Hassan',
-    loanOfficerId: 'LO003',
-    managerId: 'MGR001',
+    loanOfficerId: '003',
+    managerId: 'manager',
     outstanding: 9500,
     outstandingAtRisk: 4000,
     parPerLoan: 0.42,
@@ -217,8 +217,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C007',
     name: 'Yusuf Ibrahim',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 6000,
     outstandingAtRisk: 1200,
     parPerLoan: 0.2,
@@ -239,8 +239,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C008',
     name: 'Amira Saleh',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 11000,
     outstandingAtRisk: 2200,
     parPerLoan: 0.2,
@@ -260,8 +260,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C009',
     name: 'Khaled Nasser',
-    loanOfficerId: 'LO003',
-    managerId: 'MGR001',
+    loanOfficerId: '003',
+    managerId: 'manager',
     outstanding: 7500,
     outstandingAtRisk: 1500,
     parPerLoan: 0.18,
@@ -282,8 +282,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C010',
     name: 'Samia Farouk',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 14000,
     outstandingAtRisk: 2800,
     parPerLoan: 0.22,
@@ -305,8 +305,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C011',
     name: 'Rania Ahmed',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 5000,
     outstandingAtRisk: 0,
     parPerLoan: 0,
@@ -327,8 +327,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C012',
     name: 'Tariq Mansour',
-    loanOfficerId: 'LO003',
-    managerId: 'MGR001',
+    loanOfficerId: '003',
+    managerId: 'manager',
     outstanding: 8000,
     outstandingAtRisk: 0,
     parPerLoan: 0,
@@ -349,8 +349,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C013',
     name: 'Dina Kamel',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 3500,
     outstandingAtRisk: 0,
     parPerLoan: 0,
@@ -370,8 +370,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C014',
     name: 'Hossam El-Din',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 12500,
     outstandingAtRisk: 0,
     parPerLoan: 0,
@@ -392,8 +392,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C015',
     name: 'Mona Saeed',
-    loanOfficerId: 'LO003',
-    managerId: 'MGR001',
+    loanOfficerId: '003',
+    managerId: 'manager',
     outstanding: 6500,
     outstandingAtRisk: 0,
     parPerLoan: 0,
@@ -415,8 +415,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C016',
     name: 'Walid Mostafa',
-    loanOfficerId: 'LO001',
-    managerId: 'MGR001',
+    loanOfficerId: '001',
+    managerId: 'manager',
     outstanding: 20000,
     outstandingAtRisk: 8000,
     parPerLoan: 0.4,
@@ -437,8 +437,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C017',
     name: 'Heba Zaki',
-    loanOfficerId: 'LO002',
-    managerId: 'MGR001',
+    loanOfficerId: '002',
+    managerId: 'manager',
     outstanding: 4000,
     outstandingAtRisk: 400,
     parPerLoan: 0.1,
@@ -458,8 +458,8 @@ const demoClients: DemoClient[] = [
   {
     clientId: 'C018',
     name: 'Bassem Adel',
-    loanOfficerId: 'LO003',
-    managerId: 'MGR001',
+    loanOfficerId: '003',
+    managerId: 'manager',
     outstanding: 16000,
     outstandingAtRisk: 11000,
     parPerLoan: 0.68,
@@ -550,22 +550,20 @@ async function seedDemoData() {
     // Summary
     console.log('\n' + '='.repeat(60));
     console.log('🎉 Demo data seeding completed!\n');
-    console.log('📋 DEMO CREDENTIALS:');
+    console.log('📋 DEMO CREDENTIALS (No password required):');
     console.log('='.repeat(60));
     console.log('Organization ID: demo');
     console.log('');
     console.log('👤 Branch Manager:');
-    console.log('   Loan Officer ID: MGR001');
-    console.log('   Password: demo123');
+    console.log('   ID: manager');
     console.log('');
     console.log('👤 Loan Officers:');
-    console.log('   LO001 (Ahmed Hassan) - Password: demo123');
-    console.log('   LO002 (Maria Garcia) - Password: demo123');
-    console.log('   LO003 (David Chen) - Password: demo123');
+    console.log('   001 (Ahmed Hassan)');
+    console.log('   002 (Maria Garcia)');
+    console.log('   003 (David Chen)');
     console.log('');
     console.log('👤 Administrator:');
-    console.log('   Loan Officer ID: ADMIN');
-    console.log('   Password: admin123');
+    console.log('   ID: admin');
     console.log('');
     console.log('📊 Client Portfolio Summary:');
     console.log('   - Critical Risk (80-100): 3 clients');
